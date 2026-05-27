@@ -61,6 +61,16 @@ const routes = [
                     menu: true
                 }
             },
+            {
+                path: '/debug',
+                name: 'debug',
+                component: () => import('@/views/debug/index.vue'),
+                meta: {
+                    title: 'debug',
+                    name: 'debug',
+                    menu: true
+                }
+            },
         ]
 
     },

@@ -31,7 +31,7 @@ export async function init() {
             return null;
         });
 
-        const [s, user] = await Promise.all([websiteConfig(), userPromise]);
+        const [s, user] = await Promise.all([loadWebsiteConfig(), userPromise]);
         setting = s;
         settingStore.settings = setting;
         settingStore.domainList = setting.domainList;
@@ -49,9 +49,40 @@ export async function init() {
         }
 
     } else {
-        setting = await websiteConfig();
+        setting = await loadWebsiteConfig();
         settingStore.settings = setting;
         settingStore.domainList = setting.domainList;
         document.title = setting.title;
     }
+}
+
+async function loadWebsiteConfig() {
+    try {
+        const setting = await websiteConfig();
+        return normalizeWebsiteConfig(setting);
+    } catch (error) {
+        console.error('websiteConfig failed', error);
+        return normalizeWebsiteConfig({});
+    }
+}
+
+function normalizeWebsiteConfig(setting = {}) {
+    return {
+        ...setting,
+        title: setting.title || 'Cloud Mail',
+        domainList: Array.isArray(setting.domainList) ? setting.domainList : [],
+        background: setting.background || '',
+        r2Domain: setting.r2Domain || '',
+        loginOpacity: setting.loginOpacity ?? 1,
+        loginDarkenFactor: setting.loginDarkenFactor ?? 0,
+        manyEmail: setting.manyEmail ?? 0,
+        addEmail: setting.addEmail ?? 0,
+        register: setting.register ?? 1,
+        loginDomain: setting.loginDomain ?? 1,
+        linuxdoSwitch: setting.linuxdoSwitch ?? false,
+        minEmailPrefix: setting.minEmailPrefix ?? 1,
+        randomEmailSubdomains: setting.randomEmailSubdomains ?? '',
+        randomEmailLength: setting.randomEmailLength ?? 10,
+        randomEmailMode: setting.randomEmailMode || 'alnum'
+    };
 }
