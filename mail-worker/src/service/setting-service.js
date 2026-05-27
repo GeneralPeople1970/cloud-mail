@@ -69,6 +69,9 @@ const settingService = {
 		}
 
 		setting.projectLink = projectLink;
+		setting.randomEmailSubdomains ??= '';
+		setting.randomEmailLength ??= 10;
+		setting.randomEmailMode ??= 'alnum';
 
 		setting.linuxdoClientId = c.env.linuxdo_client_id;
 		setting.linuxdoCallbackUrl = c.env.linuxdo_callback_url;

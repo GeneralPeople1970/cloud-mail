@@ -37,13 +37,27 @@ const dbInit = {
 
 	async v3_2DB(c) {
 		try {
-			await c.env.db.batch([
-				c.env.db.prepare(`ALTER TABLE setting ADD COLUMN random_email_subdomains TEXT NOT NULL DEFAULT '';`),
-				c.env.db.prepare(`ALTER TABLE setting ADD COLUMN random_email_length INTEGER NOT NULL DEFAULT 10;`),
-				c.env.db.prepare(`ALTER TABLE setting ADD COLUMN random_email_mode TEXT NOT NULL DEFAULT 'alnum';`)
-			]);
+			await this.addColumnIfMissing(c, 'setting', 'random_email_subdomains', `ALTER TABLE setting ADD COLUMN random_email_subdomains TEXT NOT NULL DEFAULT '';`);
+			await this.addColumnIfMissing(c, 'setting', 'random_email_length', `ALTER TABLE setting ADD COLUMN random_email_length INTEGER NOT NULL DEFAULT 10;`);
+			await this.addColumnIfMissing(c, 'setting', 'random_email_mode', `ALTER TABLE setting ADD COLUMN random_email_mode TEXT NOT NULL DEFAULT 'alnum';`);
 		} catch (e) {
 			console.warn(`跳过字段添加：${e.message}`);
+		}
+	},
+
+	async addColumnIfMissing(c, table, column, sql) {
+		if (!/^[a-z_]+$/.test(table) || !/^[a-z_]+$/.test(column)) {
+			throw new Error('Invalid table or column name');
+		}
+		const exists = await c.env.db.prepare(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ? LIMIT 1`).bind(column).first();
+		if (exists) {
+			return;
+		}
+
+		try {
+			await c.env.db.prepare(sql).run();
+		} catch (e) {
+			console.warn(`skip add column ${table}.${column}: ${e.message}`);
 		}
 	},
 

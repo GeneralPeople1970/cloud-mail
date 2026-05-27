@@ -1051,6 +1051,8 @@ function getSettings() {
     nextTick(() => {
       settingReady.value = true
     })
+  }).catch(() => {
+    firstLoading.value = false
   })
 }
 
