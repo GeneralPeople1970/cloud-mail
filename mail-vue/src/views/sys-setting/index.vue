@@ -238,24 +238,17 @@
                 <div>
                   <el-select
                       class="random-setting-control random-mode-select"
+                      :style="{width: randomEmailModeWidth}"
                       v-model="randomEmailModeValues"
                       size="small"
                       multiple
-                      collapse-tags
-                      collapse-tags-tooltip
-                      :max-collapse-tags="1"
                   >
                     <el-option
                         v-for="item in randomEmailModeOptions"
                         :key="item.value"
                         :label="item.label"
                         :value="item.value"
-                    >
-                      <div class="random-mode-option">
-                        <span>{{ item.label }}</span>
-                        <Icon v-if="randomEmailModeValues.includes(item.value)" icon="material-symbols:check-rounded" width="16" height="16"/>
-                      </div>
-                    </el-option>
+                    />
                   </el-select>
                 </div>
               </div>
@@ -269,6 +262,7 @@
                 <div>
                   <el-input-tag
                       class="random-subdomain-input"
+                      :style="{width: randomEmailSubdomainsWidth}"
                       v-model="randomEmailSubdomains"
                       size="small"
                       clearable
@@ -1001,6 +995,9 @@ const randomEmailModeOptions = computed(() => [
   {label: t('randomEmailModeSymbols'), value: 'symbols'},
 ])
 
+const randomSettingBaseWidth = 150
+const randomSettingMaxWidth = 360
+
 const randomEmailModeValues = computed({
   get() {
     return normalizeRandomEmailModeValue(setting.value.randomEmailMode)
@@ -1011,6 +1008,20 @@ const randomEmailModeValues = computed({
     setting.value.randomEmailMode = mode
     changeField('randomEmailMode', mode)
   }
+})
+
+const randomEmailModeWidth = computed(() => {
+  const labels = randomEmailModeValues.value.map(value => {
+    return randomEmailModeOptions.value.find(item => item.value === value)?.label || value
+  })
+  const labelWidth = labels.reduce((total, label) => total + getTextWidth(label, '13px sans-serif'), 0)
+  return randomControlWidth(labelWidth + labels.length * 28 + 48)
+})
+
+const randomEmailSubdomainsWidth = computed(() => {
+  const segments = normalizeRandomEmailSubdomains(randomEmailSubdomains.value)
+  const labelWidth = segments.reduce((total, segment) => total + getTextWidth(segment, '12px sans-serif') + 38, 0)
+  return randomControlWidth(labelWidth + 32)
 })
 
 const tgChatId = ref([])
@@ -1095,6 +1106,11 @@ function normalizeRandomEmailModeValue(value) {
       .filter(item => allowed.includes(item))
   const unique = Array.from(new Set(selected))
   return unique.length ? unique : ['letters', 'numbers']
+}
+
+function randomControlWidth(width) {
+  const controlWidth = Math.min(randomSettingMaxWidth, Math.max(randomSettingBaseWidth, Math.ceil(width)))
+  return `${controlWidth}px`
 }
 
 
@@ -2031,16 +2047,7 @@ function editSetting(settingForm, refreshStatus = true) {
   width: 150px;
 }
 
-.random-mode-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-}
-
 .random-subdomain-input {
-  width: clamp(150px, 45vw, 360px);
   max-width: 100%;
 }
 

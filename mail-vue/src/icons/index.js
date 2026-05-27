@@ -297,7 +297,7 @@ addCollection({
             "body": "<path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"m17 17l4 4M3 11a8 8 0 1 0 16 0a8 8 0 0 0-16 0\"/>"
         },
         "copy": {
-            "body": "<g fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"><path d=\"M8 8.5h8.5V17H8z\"/><path d=\"M5.5 14.5H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5a2 2 0 0 1 2 2v.5\"/></g>"
+            "body": "<g fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"><path d=\"M8.5 8.5h9a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2z\"/><path d=\"M15.5 8.5v-2a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2\"/></g>"
         },
         "shuffle": {
             "body": "<g fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"><path d=\"m18 4l3 3l-3 3m0 4l3 3l-3 3\"/><path d=\"M3 7h3.5c2.5 0 3.5 2 4.5 5s2 5 4.5 5H21\"/><path d=\"M3 17h3.5c1.2 0 2-.4 2.7-1.1m3.6-7.8c.7-.7 1.5-1.1 2.7-1.1H21\"/></g>"

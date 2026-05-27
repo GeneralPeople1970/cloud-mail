@@ -2,20 +2,20 @@
   <div class="debug-page">
     <div class="debug-header">
       <div>
-        <h2>Debug</h2>
-        <p>用于排查线上白屏、接口异常和 Cloudflare Worker 绑定问题。</p>
+        <h2>{{ $t('debug') }}</h2>
+        <p>{{ $t('debugDesc') }}</p>
       </div>
       <div class="actions">
-        <el-button :loading="loading" type="primary" @click="runDiagnostics">重新诊断</el-button>
-        <el-button @click="copyReport">复制报告</el-button>
-        <el-button @click="clearErrors">清除错误</el-button>
+        <el-button :loading="loading" type="primary" @click="runDiagnostics">{{ $t('debugRunDiagnostics') }}</el-button>
+        <el-button @click="copyReport">{{ $t('debugCopyReport') }}</el-button>
+        <el-button @click="clearErrors">{{ $t('debugClearErrors') }}</el-button>
       </div>
     </div>
 
     <section class="debug-section debug-switch-section">
       <div>
-        <div class="section-title">Debug Capture</div>
-        <p>Enable frontend error capture for deployment diagnostics.</p>
+        <div class="section-title">{{ $t('debugCapture') }}</div>
+        <p>{{ $t('debugCaptureDesc') }}</p>
       </div>
       <el-switch
           v-model="debugEnabled"
@@ -31,12 +31,12 @@
         type="warning"
         :closable="false"
         show-icon
-        title="你刚才的 Cloudflare 日志显示：本次部署后的 Worker 绑定只有 ai 和 assets，db、kv、vars、custom domain route 都被本地 wrangler 配置覆盖掉了。"
-        description="如果接口返回 500、HTML 或 Network Error，优先检查 Cloudflare Worker 的 D1/KV/变量/自定义域名绑定是否仍存在。"/>
+        :title="$t('debugDeployAlertTitle')"
+        :description="$t('debugDeployAlertDesc')"/>
 
     <div class="summary-grid">
       <div class="summary-item">
-        <span>当前地址</span>
+        <span>{{ $t('debugCurrentUrl') }}</span>
         <strong>{{ runtime.location }}</strong>
       </div>
       <div class="summary-item">
@@ -45,43 +45,43 @@
       </div>
       <div class="summary-item">
         <span>Token</span>
-        <strong>{{ runtime.hasToken ? '存在' : '不存在' }}</strong>
+        <strong>{{ runtime.hasToken ? $t('exists') : $t('notExists') }}</strong>
       </div>
       <div class="summary-item">
-        <span>前端错误数</span>
+        <span>{{ $t('debugFrontendErrorCount') }}</span>
         <strong>{{ frontendErrors.length }}</strong>
       </div>
     </div>
 
     <section class="debug-section">
-      <div class="section-title">接口诊断</div>
+      <div class="section-title">{{ $t('debugApiDiagnostics') }}</div>
       <el-table :data="checks" border>
-        <el-table-column prop="name" label="项目" min-width="130"/>
-        <el-table-column prop="url" label="请求地址" min-width="240" show-overflow-tooltip/>
-        <el-table-column label="状态" width="120">
+        <el-table-column prop="name" :label="$t('debugItem')" min-width="130"/>
+        <el-table-column prop="url" :label="$t('debugRequestUrl')" min-width="240" show-overflow-tooltip/>
+        <el-table-column :label="$t('status')" width="120">
           <template #default="{ row }">
             <el-tag :type="statusType(row)">{{ row.statusText }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="elapsed" label="耗时" width="90"/>
-        <el-table-column prop="message" label="返回信息" min-width="180" show-overflow-tooltip/>
+        <el-table-column prop="elapsed" :label="$t('debugElapsed')" width="90"/>
+        <el-table-column prop="message" :label="$t('debugResponseMessage')" min-width="180" show-overflow-tooltip/>
         <el-table-column prop="dataKeys" label="data keys" min-width="220" show-overflow-tooltip/>
       </el-table>
     </section>
 
     <section class="debug-section">
-      <div class="section-title">前端错误</div>
-      <el-empty v-if="frontendErrors.length === 0" description="暂无捕获到的前端错误"/>
+      <div class="section-title">{{ $t('debugFrontendErrors') }}</div>
+      <el-empty v-if="frontendErrors.length === 0" :description="$t('debugNoFrontendErrors')"/>
       <el-table v-else :data="frontendErrors" border>
-        <el-table-column prop="time" label="时间" width="210"/>
-        <el-table-column prop="type" label="类型" width="160"/>
-        <el-table-column prop="message" label="错误" min-width="260" show-overflow-tooltip/>
-        <el-table-column prop="path" label="页面" min-width="260" show-overflow-tooltip/>
+        <el-table-column prop="time" :label="$t('time')" width="210"/>
+        <el-table-column prop="type" :label="$t('type')" width="160"/>
+        <el-table-column prop="message" :label="$t('error')" min-width="260" show-overflow-tooltip/>
+        <el-table-column prop="path" :label="$t('page')" min-width="260" show-overflow-tooltip/>
       </el-table>
     </section>
 
     <section class="debug-section">
-      <div class="section-title">完整报告</div>
+      <div class="section-title">{{ $t('debugFullReport') }}</div>
       <pre class="report">{{ report }}</pre>
     </section>
   </div>
@@ -90,6 +90,7 @@
 <script setup>
 import {computed, onMounted, ref} from 'vue';
 import {storeToRefs} from 'pinia';
+import {useI18n} from 'vue-i18n';
 import {useSettingStore} from '@/store/setting.js';
 import {useUserStore} from '@/store/user.js';
 import {settingSet} from '@/request/setting.js';
@@ -100,6 +101,7 @@ defineOptions({
 });
 
 const API_BASE = import.meta.env.VITE_BASE_URL || '/api';
+const {t} = useI18n();
 const settingStore = useSettingStore();
 const userStore = useUserStore();
 const {settings, domainList} = storeToRefs(settingStore);
@@ -147,12 +149,12 @@ const report = computed(() => JSON.stringify({
   frontendErrors: frontendErrors.value
 }, null, 2));
 
-const checkDefinitions = [
-  {name: '网站公开配置', path: () => '/setting/websiteConfig'},
-  {name: '系统设置', path: () => '/setting/query'},
-  {name: '当前用户', path: () => '/my/loginUserInfo'},
-  {name: '随机邮箱列表', path: () => `/randomEmail/list?page=1&size=1&address=${encodeURIComponent(buildRandomDiagnosticAddress())}`}
-];
+const checkDefinitions = computed(() => [
+  {name: t('debugPublicConfig'), path: () => '/setting/websiteConfig'},
+  {name: t('debugSystemSetting'), path: () => '/setting/query'},
+  {name: t('debugCurrentUser'), path: () => '/my/loginUserInfo'},
+  {name: t('debugRandomEmailList'), path: () => `/randomEmail/list?page=1&size=1&address=${encodeURIComponent(buildRandomDiagnosticAddress())}`}
+]);
 
 onMounted(() => {
   runDiagnostics();
@@ -164,7 +166,7 @@ async function runDiagnostics() {
   checks.value = [];
 
   const results = [];
-  for (const definition of checkDefinitions) {
+  for (const definition of checkDefinitions.value) {
     results.push(await runCheck(definition));
     checks.value = [...results];
   }
@@ -182,7 +184,7 @@ async function saveDebugSwitch(value) {
     debugEnabled.value = debug;
     setDebugEnabled(debug === 1);
     ElMessage({
-      message: debug === 1 ? 'Debug enabled' : 'Debug disabled',
+      message: debug === 1 ? t('debugEnabledMsg') : t('debugDisabledMsg'),
       type: 'success',
       plain: true
     });
@@ -278,7 +280,7 @@ function statusType(row) {
 async function copyReport() {
   await navigator.clipboard.writeText(report.value);
   ElMessage({
-    message: '已复制 Debug 报告',
+    message: t('debugReportCopied'),
     type: 'success',
     plain: true
   });
@@ -422,6 +424,11 @@ function clearErrors() {
 @media (max-width: 560px) {
   .debug-page {
     padding: 12px;
+  }
+
+  .debug-switch-section {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .summary-grid {

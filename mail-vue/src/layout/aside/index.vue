@@ -72,7 +72,7 @@
         <el-menu-item @click="router.push({name: 'debug'})" index="debug" v-perm="'setting:query'"
                       :class="route.meta.name === 'debug' ? 'choose-item' : ''">
           <Icon icon="fluent:bug-24-regular" width="20" height="20" />
-          <span class="menu-name" style="margin-left: 21px">Debug</span>
+          <span class="menu-name" style="margin-left: 21px">{{$t('debug')}}</span>
         </el-menu-item>
       </el-menu>
     </div>
