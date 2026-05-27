@@ -282,6 +282,7 @@ function typeSelectChange() {
 function jumpContent(email) {
   emailStore.contentData.email = email
   emailStore.contentData.delType = 'physics'
+  emailStore.contentData.showDelete = true
   emailStore.contentData.showStar = false
   emailStore.contentData.showReply = false
   router.push({name: 'content'})

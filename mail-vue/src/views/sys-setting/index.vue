@@ -211,6 +211,61 @@
             </div>
           </div>
 
+          <div class="settings-card">
+            <div class="card-title">{{ $t('randomEmail') }}</div>
+            <div class="card-content">
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('randomEmailLength') }}</span>
+                  <el-tooltip effect="dark" :content="$t('randomEmailLengthDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-input-number
+                      size="small"
+                      v-model="setting.randomEmailLength"
+                      :min="4"
+                      :max="32"
+                      :step="1"
+                      @change="changeField('randomEmailLength', $event)"
+                  />
+                </div>
+              </div>
+              <div class="setting-item">
+                <div><span>{{ $t('randomEmailMode') }}</span></div>
+                <div>
+                  <el-select
+                      @change="changeField('randomEmailMode', $event)"
+                      :style="`width: ${ locale === 'en' ? 120 : 100 }px;`"
+                      v-model="setting.randomEmailMode"
+                      placeholder="Select"
+                  >
+                    <el-option
+                        v-for="item in randomEmailModeOptions"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                    />
+                  </el-select>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('randomEmailSubdomains') }}</span>
+                  <el-tooltip effect="dark" :content="$t('randomEmailSubdomainsDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div class="forward">
+                  <el-button class="opt-button" size="small" type="primary" @click="openRandomEmailSubdomains">
+                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                  </el-button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Object Storage Card -->
           <div class="settings-card">
             <div class="card-title">{{ $t('oss') }}</div>
@@ -806,6 +861,22 @@
         </el-form>
         <el-button type="primary" style="width: 100%;" :loading="settingLoading" @click="saveAiCodeFilter">{{ $t('save') }}</el-button>
       </el-dialog>
+      <el-dialog v-model="randomEmailSubdomainShow" class="forward-dialog" @closed="resetRandomEmailSubdomains">
+        <template #header>
+          <div class="forward-head">
+            <span class="forward-set-title">{{ $t('randomEmailSubdomains') }}</span>
+            <el-tooltip effect="dark" :content="$t('randomEmailSubdomainsDesc')">
+              <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+            </el-tooltip>
+          </div>
+        </template>
+        <el-form>
+          <el-form-item :label="t('randomEmailSubdomainsInputDesc')" label-position="top">
+            <el-input-tag v-model="randomEmailSubdomains" @add-tag="randomEmailSubdomainAddTag"/>
+          </el-form-item>
+        </el-form>
+        <el-button type="primary" style="width: 100%;" :loading="settingLoading" @click="saveRandomEmailSubdomains">{{ $t('save') }}</el-button>
+      </el-dialog>
     </el-scrollbar>
   </div>
 </template>
@@ -846,6 +917,7 @@ const editTitleShow = ref(false)
 const resendTokenFormShow = ref(false)
 const blackFormShow = ref(false)
 const aiCodeFilterShow = ref(false)
+const randomEmailSubdomainShow = ref(false)
 const r2DomainShow = ref(false)
 const turnstileShow = ref(false)
 const tgSettingShow = ref(false)
@@ -915,6 +987,7 @@ const blackListForm = ref({
   blackFrom: []
 })
 const aiCodeFilter = ref([])
+const randomEmailSubdomains = ref([])
 
 const authRefreshOptions = computed(() => [
   {label: t('disable'), value: 0},
@@ -923,6 +996,13 @@ const authRefreshOptions = computed(() => [
   {label: '10s', value: 10},
   {label: '15s', value: 15},
   {label: '20s', value: 20},
+])
+
+const randomEmailModeOptions = computed(() => [
+  {label: t('randomEmailModeAlnum'), value: 'alnum'},
+  {label: t('randomEmailModeLetters'), value: 'letters'},
+  {label: t('randomEmailModeNumbers'), value: 'numbers'},
+  {label: t('randomEmailModeHex'), value: 'hex'},
 ])
 
 const tgChatId = ref([])
@@ -967,6 +1047,7 @@ function getSettings() {
     resetEmailPrefix()
     resetBlackList()
     resetAiCodeFilter()
+    resetRandomEmailSubdomains()
     nextTick(() => {
       settingReady.value = true
     })
@@ -1268,6 +1349,10 @@ function resetAiCodeFilter() {
   aiCodeFilter.value = setting.value.aiCodeFilter ? setting.value.aiCodeFilter.split(',') : []
 }
 
+function resetRandomEmailSubdomains() {
+  randomEmailSubdomains.value = setting.value.randomEmailSubdomains ? setting.value.randomEmailSubdomains.split(',') : []
+}
+
 function saveEmailPrefix() {
   const form = {}
   form.minEmailPrefix = minEmailPrefix.value
@@ -1277,6 +1362,10 @@ function saveEmailPrefix() {
 
 function saveAiCodeFilter() {
   editSetting({aiCodeFilter: aiCodeFilter.value + ''})
+}
+
+function saveRandomEmailSubdomains() {
+  editSetting({randomEmailSubdomains: randomEmailSubdomains.value + ''})
 }
 
 const opacityChange = debounce(doOpacityChange, 1000, {
@@ -1336,6 +1425,24 @@ function aiCodeFilterAddTag(val) {
   emails.forEach(email => {
     if ((isEmail(email) || isDomain(email)) && !aiCodeFilter.value.includes(email)) {
       aiCodeFilter.value.push(email)
+    }
+  })
+}
+
+function openRandomEmailSubdomains() {
+  randomEmailSubdomainShow.value = true
+}
+
+function randomEmailSubdomainAddTag(val) {
+  const segments = Array.from(new Set(
+      val.split(/[,，]/).map(item => item.trim().toLowerCase()).filter(item => item)
+  ));
+
+  randomEmailSubdomains.value.splice(randomEmailSubdomains.value.length - 1, 1)
+
+  segments.forEach(segment => {
+    if (/^[a-z0-9-]+$/.test(segment) && !randomEmailSubdomains.value.includes(segment)) {
+      randomEmailSubdomains.value.push(segment)
     }
   })
 }
@@ -1520,6 +1627,7 @@ function editSetting(settingForm, refreshStatus = true) {
     addS3Show.value = false
     emailPrefixShow.value = false
     aiCodeFilterShow.value = false
+    randomEmailSubdomainShow.value = false
   }).catch((e) => {
     loginOpacity.value = setting.value.loginOpacity
     loginDarkenFactor.value = normalizeFactor(setting.value.loginDarkenFactor)

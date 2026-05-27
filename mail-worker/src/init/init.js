@@ -30,8 +30,21 @@ const dbInit = {
 		await this.v2_9DB(c);
 		await this.v3_0DB(c);
 		await this.v3_1DB(c);
+		await this.v3_2DB(c);
 		await settingService.refresh(c);
 		return c.text('success');
+	},
+
+	async v3_2DB(c) {
+		try {
+			await c.env.db.batch([
+				c.env.db.prepare(`ALTER TABLE setting ADD COLUMN random_email_subdomains TEXT NOT NULL DEFAULT '';`),
+				c.env.db.prepare(`ALTER TABLE setting ADD COLUMN random_email_length INTEGER NOT NULL DEFAULT 10;`),
+				c.env.db.prepare(`ALTER TABLE setting ADD COLUMN random_email_mode TEXT NOT NULL DEFAULT 'alnum';`)
+			]);
+		} catch (e) {
+			console.warn(`跳过字段添加：${e.message}`);
+		}
 	},
 
 	async v3_1DB(c) {

@@ -30,6 +30,7 @@ const emailStore = useEmailStore();
 function jumpContent(email) {
   emailStore.contentData.email = email
   emailStore.contentData.delType = 'logic'
+  emailStore.contentData.showDelete = true
   emailStore.contentData.showStar = true
   emailStore.contentData.showReply = true
   router.push('/message')

@@ -139,9 +139,22 @@ const settingService = {
 			params.aiCodeFilter = params.aiCodeFilter + '';
 		}
 
+		if (Array.isArray(params.randomEmailSubdomains)) {
+			params.randomEmailSubdomains = params.randomEmailSubdomains + '';
+		}
+
 		if (params.loginDarkenFactor !== undefined) {
 			const factor = Number(params.loginDarkenFactor);
 			params.loginDarkenFactor = Number.isNaN(factor) ? 0 : Math.min(1, Math.max(0, factor));
+		}
+
+		if (params.randomEmailLength !== undefined) {
+			const length = Number(params.randomEmailLength);
+			params.randomEmailLength = Number.isNaN(length) ? 10 : Math.min(32, Math.max(4, length));
+		}
+
+		if (params.randomEmailMode !== undefined && !['alnum', 'letters', 'numbers', 'hex'].includes(params.randomEmailMode)) {
+			params.randomEmailMode = 'alnum';
 		}
 
 		params.resendTokens = JSON.stringify(resendTokens);
@@ -238,6 +251,9 @@ const settingService = {
 			linuxdoCallbackUrl: settingRow.linuxdoCallbackUrl,
 			linuxdoSwitch: settingRow.linuxdoSwitch,
 			minEmailPrefix: settingRow.minEmailPrefix,
+			randomEmailSubdomains: settingRow.randomEmailSubdomains,
+			randomEmailLength: settingRow.randomEmailLength,
+			randomEmailMode: settingRow.randomEmailMode,
 			projectLink: settingRow.projectLink
 		};
 	},

@@ -10,6 +10,7 @@ export const useEmailStore = defineStore('email', {
         contentData: {
             email: null,
             delType: null,
+            showDelete: true,
             showStar: true,
             showReply: true,
             showUnread: false

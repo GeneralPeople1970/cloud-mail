@@ -51,6 +51,16 @@ const routes = [
                     menu: true
                 }
             },
+            {
+                path: '/random-email',
+                name: 'random-email',
+                component: () => import('@/views/random-email/index.vue'),
+                meta: {
+                    title: 'randomEmail',
+                    name: 'random-email',
+                    menu: true
+                }
+            },
         ]
 
     },

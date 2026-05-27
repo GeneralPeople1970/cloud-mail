@@ -2,6 +2,7 @@
   <div class="email-container">
     <div class="header-actions">
       <el-checkbox
+          v-if="showCheckbox"
           v-model="checkAll"
           :indeterminate="isIndeterminate"
           :disabled="!emailList.length || loading"
@@ -13,7 +14,7 @@
         <slot name="first"></slot>
         <Icon class="icon reload" icon="ion:reload" width="18" height="18" @click="refresh"/>
         <Icon v-perm="'email:delete'" class="icon delete" icon="uiw:delete" width="16" height="16"
-              v-if="getSelectedMailsIds().length > 0"
+              v-if="allowDelete && getSelectedMailsIds().length > 0"
               @click="handleDelete"/>
         <Icon v-perm="'email:delete'" class="icon delete" icon="fluent:mail-read-20-regular" width="21" height="21"
               v-if="getSelectedMailsIds().length > 0 && showUnread"
@@ -46,8 +47,9 @@
                  @contextmenu="handleContextmenu($event, item)"
                  :style="item.rightChecked ? 'background: #FDF6EC' : ''"
             >
-              <el-checkbox :class=" props.type === 'all-email' ? 'all-email-checkbox' : 'checkbox'"
+              <el-checkbox v-if="showCheckbox" :class=" props.type === 'all-email' ? 'all-email-checkbox' : 'checkbox'"
                            v-model="item.checked" @click.stop></el-checkbox>
+              <div v-else class="checkbox-placeholder"></div>
               <div @click.stop="starChange(item)" class="pc-star" v-if="showStar">
                 <Icon v-if="item.isStar" icon="fluent-color:star-16" width="20" height="20"/>
                 <Icon v-else icon="solar:star-line-duotone" width="18" height="18"/>
@@ -219,7 +221,7 @@
               </div>
             </template>
           </el-dropdown-item>
-          <el-dropdown-item @click="rightDelete(rightClickEmail.emailId)">
+          <el-dropdown-item v-if="allowDelete" @click="rightDelete(rightClickEmail.emailId)">
             <template #default>
               <div class="right-dropdown-item">
                 <Icon icon="uiw:delete" width="16" height="20" style="margin-left: 1px;margin-right: 3px" />
@@ -280,6 +282,14 @@ const props = defineProps({
     default: true
   },
   allowStar: {
+    type: Boolean,
+    default: true
+  },
+  allowDelete: {
+    type: Boolean,
+    default: true
+  },
+  showCheckbox: {
     type: Boolean,
     default: true
   },
@@ -1046,6 +1056,11 @@ function loadData() {
     padding-left: 15px;
     padding-right: 20px;
     justify-content: center;
+  }
+
+  .checkbox-placeholder {
+    width: 35px;
+    flex-shrink: 0;
   }
 
   .all-email-checkbox {

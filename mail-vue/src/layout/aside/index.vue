@@ -26,6 +26,11 @@
           <Icon icon="solar:star-line-duotone" width="20" height="20" />
           <span class="menu-name" style="margin-left: 21px">{{$t('starred')}}</span>
         </el-menu-item>
+        <el-menu-item @click="router.push({name: 'random-email'})" index="random-email"
+                      :class="route.meta.name === 'random-email' ? 'choose-item' : ''">
+          <Icon class="menu-icon" icon="mdi:email-sync-outline" width="20" height="20" />
+          <span class="menu-name" style="margin-left: 21px">{{$t('randomEmail')}}</span>
+        </el-menu-item>
         <el-menu-item @click="router.push({name: 'setting'})" index="setting"
                       :class="route.meta.name === 'setting' ? 'choose-item' : ''">
           <Icon icon="fluent:settings-48-regular" width="20" height="20" />
@@ -148,6 +153,13 @@ const route = useRoute();
 
 .menu-name {
   user-select: none;
+}
+
+.menu-icon {
+  color: #ffffff;
+  opacity: 1;
+  filter: none;
+  text-shadow: none;
 }
 
 
