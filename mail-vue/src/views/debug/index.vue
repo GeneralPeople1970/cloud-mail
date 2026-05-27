@@ -130,10 +130,10 @@ const report = computed(() => JSON.stringify({
 }, null, 2));
 
 const checkDefinitions = [
-  {name: '网站公开配置', path: '/setting/websiteConfig'},
-  {name: '系统设置', path: '/setting/query'},
-  {name: '当前用户', path: '/my/loginUserInfo'},
-  {name: '随机邮箱列表', path: '/randomEmail/list?page=1&size=1'}
+  {name: '网站公开配置', path: () => '/setting/websiteConfig'},
+  {name: '系统设置', path: () => '/setting/query'},
+  {name: '当前用户', path: () => '/my/loginUserInfo'},
+  {name: '随机邮箱列表', path: () => `/randomEmail/list?page=1&size=1&address=${encodeURIComponent(buildRandomDiagnosticAddress())}`}
 ];
 
 onMounted(() => {
@@ -155,7 +155,7 @@ async function runDiagnostics() {
 }
 
 async function runCheck(definition) {
-  const url = buildApiUrl(definition.path);
+  const url = buildApiUrl(definition.path());
   const started = performance.now();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
@@ -202,6 +202,12 @@ async function runCheck(definition) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function buildRandomDiagnosticAddress() {
+  const domain = (Array.isArray(domainList.value) && domainList.value[0] ? domainList.value[0] : '@example.com')
+      .replace(/^@?/, '@');
+  return `debug-diagnostic-${Date.now()}${domain}`;
 }
 
 function buildApiUrl(path) {
