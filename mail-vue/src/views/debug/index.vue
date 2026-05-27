@@ -12,6 +12,20 @@
       </div>
     </div>
 
+    <section class="debug-section debug-switch-section">
+      <div>
+        <div class="section-title">Debug Capture</div>
+        <p>Enable frontend error capture for deployment diagnostics.</p>
+      </div>
+      <el-switch
+          v-model="debugEnabled"
+          :loading="savingDebug"
+          :active-value="1"
+          :inactive-value="0"
+          @change="saveDebugSwitch"
+      />
+    </section>
+
     <el-alert
         class="deploy-alert"
         type="warning"
@@ -78,7 +92,8 @@ import {computed, onMounted, ref} from 'vue';
 import {storeToRefs} from 'pinia';
 import {useSettingStore} from '@/store/setting.js';
 import {useUserStore} from '@/store/user.js';
-import {clearDebugErrors, getDebugErrors} from '@/utils/debug-capture.js';
+import {settingSet} from '@/request/setting.js';
+import {clearDebugErrors, getDebugErrors, setDebugEnabled} from '@/utils/debug-capture.js';
 
 defineOptions({
   name: 'debug'
@@ -90,6 +105,8 @@ const userStore = useUserStore();
 const {settings, domainList} = storeToRefs(settingStore);
 
 const loading = ref(false);
+const savingDebug = ref(false);
+const debugEnabled = ref(Number(settings.value?.debug) === 1 ? 1 : 0);
 const checks = ref([]);
 const frontendErrors = ref(getDebugErrors());
 
@@ -153,6 +170,27 @@ async function runDiagnostics() {
   }
 
   loading.value = false;
+}
+
+async function saveDebugSwitch(value) {
+  savingDebug.value = true;
+  const debug = Number(value) === 1 ? 1 : 0;
+
+  try {
+    await settingSet({debug});
+    settingStore.settings = {...settingStore.settings, debug};
+    debugEnabled.value = debug;
+    setDebugEnabled(debug === 1);
+    ElMessage({
+      message: debug === 1 ? 'Debug enabled' : 'Debug disabled',
+      type: 'success',
+      plain: true
+    });
+  } catch (e) {
+    debugEnabled.value = Number(settingStore.settings.debug) === 1 ? 1 : 0;
+  } finally {
+    savingDebug.value = false;
+  }
 }
 
 async function runCheck(definition) {
@@ -287,6 +325,29 @@ function clearErrors() {
 
 .deploy-alert {
   margin-bottom: 14px;
+}
+
+.debug-switch-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 0;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--el-border-color);
+  border-radius: 6px;
+  background: var(--el-bg-color);
+
+  p {
+    margin: 0;
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+  }
+
+  .section-title {
+    margin-bottom: 6px;
+  }
 }
 
 .summary-grid {

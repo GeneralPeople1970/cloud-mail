@@ -282,29 +282,6 @@
             </div>
           </div>
 
-          <div class="settings-card">
-            <div class="card-title">Debug</div>
-            <div class="card-content">
-              <div class="setting-item">
-                <div>
-                  <span>{{ $t('debugSwitch') }}</span>
-                  <el-tooltip effect="dark" :content="$t('debugSwitchDesc')">
-                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
-                  </el-tooltip>
-                </div>
-                <div>
-                  <el-switch
-                      :before-change="beforeChange"
-                      :active-value="1"
-                      :inactive-value="0"
-                      v-model="setting.debug"
-                      @change="changeField('debug', $event)"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- Object Storage Card -->
           <div class="settings-card">
             <div class="card-title">{{ $t('oss') }}</div>
@@ -920,7 +897,6 @@ import loading from "@/components/loading/index.vue";
 import {getTextWidth} from "@/utils/text.js";
 import {fileToBase64} from "@/utils/file-utils.js"
 import {useI18n} from 'vue-i18n';
-import {setDebugEnabled} from "@/utils/debug-capture.js";
 
 defineOptions({
   name: 'sys-setting'
@@ -1679,7 +1655,6 @@ function editSetting(settingForm, refreshStatus = true) {
       accountStore.currentAccountId = userStore.user.account.accountId;
     }
     settingStore.settings = {...settingStore.settings, ...settingForm}
-    setDebugEnabled(Number(settingStore.settings.debug) === 1)
     if (refreshStatus) {
       getSettings()
     }
