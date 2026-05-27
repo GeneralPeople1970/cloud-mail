@@ -46,8 +46,8 @@
                 :value="domain"
             />
           </el-select>
-          <Icon class="icon toolbar-icon" icon="material-symbols:content-copy-outline-rounded" width="20" height="20" @click="copyAddress"/>
-          <Icon class="icon toolbar-icon random-icon" icon="material-symbols:shuffle-rounded" width="22" height="22" @click="generateRandom"/>
+          <Icon class="icon toolbar-icon" icon="iconoir:copy" width="20" height="20" @click="copyAddress"/>
+          <Icon class="icon toolbar-icon random-icon" icon="iconoir:shuffle" width="20" height="20" @click="generateRandom"/>
           <Icon class="icon toolbar-icon" icon="iconoir:search" width="20" height="20" @click="search"/>
           <Icon class="icon toolbar-icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-down-outline"
                 v-if="params.timeSort === 0" width="28" height="28"/>
@@ -210,16 +210,9 @@ function randomText() {
 }
 
 function normalizeRandomMode(value) {
-  const aliases = {
-    alnum: ['letters', 'numbers'],
-    hex: ['letters', 'numbers'],
-    letters: ['letters'],
-    numbers: ['numbers'],
-    symbols: ['symbols']
-  }
   const modes = String(value || '')
       .split(',')
-      .flatMap(item => aliases[item.trim()] || [item.trim()])
+      .map(item => item.trim())
       .filter(item => ['letters', 'numbers', 'symbols'].includes(item))
   const unique = Array.from(new Set(modes))
   return unique.length ? unique : ['letters', 'numbers']

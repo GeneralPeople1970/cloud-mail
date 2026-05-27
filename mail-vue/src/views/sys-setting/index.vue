@@ -223,6 +223,7 @@
                 </div>
                 <div>
                   <el-input-number
+                      class="random-setting-control"
                       size="small"
                       v-model="setting.randomEmailLength"
                       :min="4"
@@ -235,19 +236,27 @@
               <div class="setting-item">
                 <div><span>{{ $t('randomEmailMode') }}</span></div>
                 <div>
-                  <el-checkbox-group
-                      class="random-mode-options"
+                  <el-select
+                      class="random-setting-control random-mode-select"
                       v-model="randomEmailModeValues"
+                      size="small"
+                      multiple
+                      collapse-tags
+                      collapse-tags-tooltip
+                      :max-collapse-tags="1"
                   >
-                    <el-checkbox-button
+                    <el-option
                         v-for="item in randomEmailModeOptions"
                         :key="item.value"
-                        :label="item.value"
+                        :label="item.label"
                         :value="item.value"
                     >
-                      {{ item.label }}
-                    </el-checkbox-button>
-                  </el-checkbox-group>
+                      <div class="random-mode-option">
+                        <span>{{ item.label }}</span>
+                        <Icon v-if="randomEmailModeValues.includes(item.value)" icon="material-symbols:check-rounded" width="16" height="16"/>
+                      </div>
+                    </el-option>
+                  </el-select>
                 </div>
               </div>
               <div class="setting-item">
@@ -257,11 +266,17 @@
                     <Icon class="warning" icon="fe:warning" width="18" height="18"/>
                   </el-tooltip>
                 </div>
-                <div class="forward">
-                  <el-button class="opt-button random-subdomain-button" size="small" type="primary" @click="openRandomEmailSubdomains">
-                    <span>{{ randomEmailSubdomainLabel }}</span>
-                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
-                  </el-button>
+                <div>
+                  <el-input-tag
+                      class="random-subdomain-input"
+                      v-model="randomEmailSubdomains"
+                      size="small"
+                      clearable
+                      :placeholder="$t('randomEmailSubdomains')"
+                      @add-tag="randomEmailSubdomainAddTag"
+                      @remove-tag="scheduleSaveRandomEmailSubdomains"
+                      @clear="scheduleSaveRandomEmailSubdomains"
+                  />
                 </div>
               </div>
             </div>
@@ -885,22 +900,6 @@
         </el-form>
         <el-button type="primary" style="width: 100%;" :loading="settingLoading" @click="saveAiCodeFilter">{{ $t('save') }}</el-button>
       </el-dialog>
-      <el-dialog v-model="randomEmailSubdomainShow" class="forward-dialog" @closed="resetRandomEmailSubdomains">
-        <template #header>
-          <div class="forward-head">
-            <span class="forward-set-title">{{ $t('randomEmailSubdomains') }}</span>
-            <el-tooltip effect="dark" :content="$t('randomEmailSubdomainsDesc')">
-              <Icon class="warning" icon="fe:warning" width="18" height="18"/>
-            </el-tooltip>
-          </div>
-        </template>
-        <el-form>
-          <el-form-item :label="t('randomEmailSubdomainsInputDesc')" label-position="top">
-            <el-input-tag v-model="randomEmailSubdomains" @add-tag="randomEmailSubdomainAddTag"/>
-          </el-form-item>
-        </el-form>
-        <el-button type="primary" style="width: 100%;" :loading="settingLoading" @click="saveRandomEmailSubdomains">{{ $t('save') }}</el-button>
-      </el-dialog>
     </el-scrollbar>
   </div>
 </template>
@@ -940,7 +939,6 @@ const editTitleShow = ref(false)
 const resendTokenFormShow = ref(false)
 const blackFormShow = ref(false)
 const aiCodeFilterShow = ref(false)
-const randomEmailSubdomainShow = ref(false)
 const r2DomainShow = ref(false)
 const turnstileShow = ref(false)
 const tgSettingShow = ref(false)
@@ -1039,11 +1037,6 @@ const randomEmailModeValues = computed({
   }
 })
 
-const randomEmailSubdomainLabel = computed(() => {
-  const count = randomEmailSubdomains.value.length
-  return count ? `${count}${t('randomEmailSubdomainCount')}` : t('notConfigured')
-})
-
 const tgChatId = ref([])
 const customDomain = ref('')
 const tgBotStatus = ref(0)
@@ -1120,16 +1113,9 @@ function toList(value) {
 
 function normalizeRandomEmailModeValue(value) {
   const allowed = ['letters', 'numbers', 'symbols']
-  const aliases = {
-    alnum: ['letters', 'numbers'],
-    hex: ['letters', 'numbers'],
-    letters: ['letters'],
-    numbers: ['numbers'],
-    symbols: ['symbols']
-  }
   const rawList = Array.isArray(value) ? value : `${value || ''}`.split(',')
   const selected = rawList
-      .flatMap(item => aliases[String(item).trim()] || [String(item).trim()])
+      .map(item => String(item).trim())
       .filter(item => allowed.includes(item))
   const unique = Array.from(new Set(selected))
   return unique.length ? unique : ['letters', 'numbers']
@@ -1282,7 +1268,7 @@ function openForwardRules() {
 
 function emailAddTag(val) {
   const emails = Array.from(new Set(
-      val.split(/[,，]/).map(item => item.trim()).filter(item => item)
+      val.split(/[,，、]/).map(item => item.trim()).filter(item => item)
   ));
 
   forwardEmail.value.splice(forwardEmail.value.length - 1, 1)
@@ -1296,7 +1282,7 @@ function emailAddTag(val) {
 
 function ruleEmailAddTag(val) {
   const emails = Array.from(new Set(
-      val.split(/[,，]/).map(item => item.trim()).filter(item => item)
+      val.split(/[,，、]/).map(item => item.trim()).filter(item => item)
   ));
 
   ruleEmail.value.splice(ruleEmail.value.length - 1, 1)
@@ -1311,7 +1297,7 @@ function ruleEmailAddTag(val) {
 function addChatTag(val) {
 
   const chatIds = Array.from(new Set(
-      val.split(/[,，]/).map(item => item.trim()).filter(item => item)
+      val.split(/[,，、]/).map(item => item.trim()).filter(item => item)
   ));
 
   tgChatId.value.splice(tgChatId.value.length - 1, 1)
@@ -1433,7 +1419,9 @@ function saveAiCodeFilter() {
 }
 
 function saveRandomEmailSubdomains() {
-  editSetting({randomEmailSubdomains: randomEmailSubdomains.value + ''})
+  const segments = normalizeRandomEmailSubdomains(randomEmailSubdomains.value)
+  randomEmailSubdomains.value = segments
+  editSetting({randomEmailSubdomains: segments + ''})
 }
 
 const opacityChange = debounce(doOpacityChange, 1000, {
@@ -1471,7 +1459,7 @@ function saveBlackList() {
 
 function banEmailAddTag(val) {
   const emails = Array.from(new Set(
-      val.split(/[,，]/).map(item => item.trim()).filter(item => item)
+      val.split(/[,，、]/).map(item => item.trim()).filter(item => item)
   ));
 
   blackListForm.value.blackFrom.splice(blackListForm.value.blackFrom.length - 1, 1)
@@ -1485,7 +1473,7 @@ function banEmailAddTag(val) {
 
 function aiCodeFilterAddTag(val) {
   const emails = Array.from(new Set(
-      val.split(/[,，]/).map(item => item.trim()).filter(item => item)
+      val.split(/[,，、]/).map(item => item.trim()).filter(item => item)
   ));
 
   aiCodeFilter.value.splice(aiCodeFilter.value.length - 1, 1)
@@ -1497,13 +1485,9 @@ function aiCodeFilterAddTag(val) {
   })
 }
 
-function openRandomEmailSubdomains() {
-  randomEmailSubdomainShow.value = true
-}
-
 function randomEmailSubdomainAddTag(val) {
   const segments = Array.from(new Set(
-      val.split(/[,，]/).map(item => item.trim().toLowerCase()).filter(item => item)
+      val.split(/[,，、]/).map(item => item.trim().toLowerCase()).filter(item => item)
   ));
 
   randomEmailSubdomains.value.splice(randomEmailSubdomains.value.length - 1, 1)
@@ -1513,6 +1497,21 @@ function randomEmailSubdomainAddTag(val) {
       randomEmailSubdomains.value.push(segment)
     }
   })
+
+  saveRandomEmailSubdomains()
+}
+
+function scheduleSaveRandomEmailSubdomains() {
+  nextTick(saveRandomEmailSubdomains)
+}
+
+function normalizeRandomEmailSubdomains(value) {
+  const list = Array.isArray(value) ? value : `${value || ''}`.split(',')
+  return Array.from(new Set(
+      list
+          .map(item => String(item).trim().toLowerCase())
+          .filter(item => /^[a-z0-9-]+$/.test(item))
+  ))
 }
 
 
@@ -1697,7 +1696,6 @@ function editSetting(settingForm, refreshStatus = true) {
     addS3Show.value = false
     emailPrefixShow.value = false
     aiCodeFilterShow.value = false
-    randomEmailSubdomainShow.value = false
   }).catch((e) => {
     loginOpacity.value = setting.value.loginOpacity
     loginDarkenFactor.value = normalizeFactor(setting.value.loginDarkenFactor)
@@ -2054,29 +2052,21 @@ function editSetting(settingForm, refreshStatus = true) {
   width: fit-content !important;
 }
 
-.random-mode-options {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 6px;
-
-  :deep(.el-checkbox-button__inner) {
-    padding: 5px 10px;
-  }
+.random-setting-control {
+  width: 150px;
 }
 
-.random-subdomain-button {
-  width: 150px !important;
-  display: inline-flex;
+.random-mode-option {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
+  width: 100%;
+}
 
-  span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+.random-subdomain-input {
+  width: clamp(150px, 45vw, 360px);
+  max-width: 100%;
 }
 
 .email-prefix {

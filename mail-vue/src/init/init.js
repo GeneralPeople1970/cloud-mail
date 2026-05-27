@@ -86,7 +86,7 @@ function normalizeWebsiteConfig(setting = {}) {
         minEmailPrefix: setting.minEmailPrefix ?? 1,
         randomEmailSubdomains: setting.randomEmailSubdomains ?? '',
         randomEmailLength: setting.randomEmailLength ?? 10,
-        randomEmailMode: setting.randomEmailMode || 'alnum',
+        randomEmailMode: setting.randomEmailMode || 'letters,numbers',
         debug: Number(setting.debug) === 1 ? 1 : 0
     };
 }

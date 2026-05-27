@@ -15,6 +15,7 @@ const settingService = {
 	async refresh(c) {
 		const settingRow = await orm(c).select().from(setting).get();
 		settingRow.resendTokens = JSON.parse(settingRow.resendTokens);
+		settingRow.randomEmailMode = this.normalizeRandomEmailMode(settingRow.randomEmailMode);
 		c.set('setting', settingRow);
 		await c.env.kv.put(KvConst.SETTING, JSON.stringify(settingRow));
 	},
@@ -71,7 +72,7 @@ const settingService = {
 		setting.projectLink = projectLink;
 		setting.randomEmailSubdomains ??= '';
 		setting.randomEmailLength ??= 10;
-		setting.randomEmailMode ??= 'alnum';
+		setting.randomEmailMode = this.normalizeRandomEmailMode(setting.randomEmailMode);
 		setting.debug ??= 0;
 
 		setting.linuxdoClientId = c.env.linuxdo_client_id;
@@ -269,16 +270,9 @@ const settingService = {
 
 	normalizeRandomEmailMode(value) {
 		const allowed = ['letters', 'numbers', 'symbols'];
-		const aliases = {
-			alnum: ['letters', 'numbers'],
-			hex: ['letters', 'numbers'],
-			letters: ['letters'],
-			numbers: ['numbers'],
-			symbols: ['symbols']
-		};
 		const parts = String(value || '')
 			.split(',')
-			.flatMap(item => aliases[item.trim()] || [item.trim()])
+			.map(item => item.trim())
 			.filter(item => allowed.includes(item));
 		const selected = Array.from(new Set(parts));
 		return selected.length ? selected.join(',') : 'letters,numbers';

@@ -9,7 +9,7 @@ export const useSettingStore = defineStore('setting', {
             loginDarkenFactor: 0,
             randomEmailSubdomains: '',
             randomEmailLength: 10,
-            randomEmailMode: 'alnum',
+            randomEmailMode: 'letters,numbers',
             debug: 0,
         },
         lang: '',
