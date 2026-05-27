@@ -6,6 +6,7 @@ import {permsToRouter} from "@/perm/perm.js";
 import router from "@/router";
 import {websiteConfig} from "@/request/setting.js";
 import i18n from "@/i18n/index.js";
+import {setDebugEnabled} from "@/utils/debug-capture.js";
 
 export async function init() {
     document.title = '\u200B'
@@ -34,6 +35,7 @@ export async function init() {
         const [s, user] = await Promise.all([loadWebsiteConfig(), userPromise]);
         setting = s;
         settingStore.settings = setting;
+        setDebugEnabled(Number(setting.debug) === 1);
         settingStore.domainList = setting.domainList;
         document.title = setting.title;
 
@@ -51,6 +53,7 @@ export async function init() {
     } else {
         setting = await loadWebsiteConfig();
         settingStore.settings = setting;
+        setDebugEnabled(Number(setting.debug) === 1);
         settingStore.domainList = setting.domainList;
         document.title = setting.title;
     }
@@ -83,6 +86,7 @@ function normalizeWebsiteConfig(setting = {}) {
         minEmailPrefix: setting.minEmailPrefix ?? 1,
         randomEmailSubdomains: setting.randomEmailSubdomains ?? '',
         randomEmailLength: setting.randomEmailLength ?? 10,
-        randomEmailMode: setting.randomEmailMode || 'alnum'
+        randomEmailMode: setting.randomEmailMode || 'alnum',
+        debug: Number(setting.debug) === 1 ? 1 : 0
     };
 }

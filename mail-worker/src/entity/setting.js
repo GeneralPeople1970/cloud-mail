@@ -55,6 +55,7 @@ export const setting = sqliteTable('setting', {
 	aiCodeFilter: text('ai_code_filter').default('').notNull(),
 	randomEmailSubdomains: text('random_email_subdomains').default('').notNull(),
 	randomEmailLength: integer('random_email_length').default(10).notNull(),
-	randomEmailMode: text('random_email_mode').default('alnum').notNull()
+	randomEmailMode: text('random_email_mode').default('alnum').notNull(),
+	debug: integer('debug').default(0).notNull()
 });
 export default setting

@@ -69,7 +69,7 @@
           <Icon icon="eos-icons:system-ok-outlined" width="18" height="18" style="margin-left: 2px" />
           <span class="menu-name" style="margin-left: 22px">{{$t('SystemSettings')}}</span>
         </el-menu-item>
-        <el-menu-item @click="router.push({name: 'debug'})" index="debug" v-perm="'setting:query'"
+        <el-menu-item v-if="settingStore.settings.debug === 1" @click="router.push({name: 'debug'})" index="debug" v-perm="'setting:query'"
                       :class="route.meta.name === 'debug' ? 'choose-item' : ''">
           <Icon icon="fluent:bug-24-regular" width="20" height="20" />
           <span class="menu-name" style="margin-left: 21px">Debug</span>

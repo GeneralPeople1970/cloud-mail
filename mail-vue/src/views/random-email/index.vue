@@ -46,12 +46,8 @@
                 :value="domain"
             />
           </el-select>
-          <el-tooltip :content="$t('copy')">
-            <Icon class="icon toolbar-icon" icon="material-symbols:content-copy-outline-rounded" width="20" height="20" @click="copyAddress"/>
-          </el-tooltip>
-          <el-tooltip :content="$t('generateRandom')">
-            <Icon class="icon toolbar-icon random-icon" icon="material-symbols:shuffle-rounded" width="22" height="22" @click="generateRandom"/>
-          </el-tooltip>
+          <Icon class="icon toolbar-icon" icon="material-symbols:content-copy-outline-rounded" width="20" height="20" @click="copyAddress"/>
+          <Icon class="icon toolbar-icon random-icon" icon="material-symbols:shuffle-rounded" width="22" height="22" @click="generateRandom"/>
           <Icon class="icon toolbar-icon" icon="iconoir:search" width="20" height="20" @click="search"/>
           <Icon class="icon toolbar-icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-down-outline"
                 v-if="params.timeSort === 0" width="28" height="28"/>
@@ -190,15 +186,14 @@ function sanitizeDomainPrefix(value) {
 }
 
 function randomText() {
-  const mode = settingStore.settings.randomEmailMode || 'alnum'
+  const modes = normalizeRandomMode(settingStore.settings.randomEmailMode)
   const length = normalizeLength(settingStore.settings.randomEmailLength)
   const charMap = {
-    alnum: 'abcdefghijklmnopqrstuvwxyz0123456789',
     letters: 'abcdefghijklmnopqrstuvwxyz',
     numbers: '0123456789',
-    hex: 'abcdef0123456789'
+    symbols: '._-'
   }
-  const chars = charMap[mode] || charMap.alnum
+  const chars = Array.from(new Set(modes.flatMap(mode => charMap[mode].split('')))).join('')
   let value = ''
   const array = new Uint32Array(length)
 
@@ -212,6 +207,22 @@ function randomText() {
   }
 
   return value
+}
+
+function normalizeRandomMode(value) {
+  const aliases = {
+    alnum: ['letters', 'numbers'],
+    hex: ['letters', 'numbers'],
+    letters: ['letters'],
+    numbers: ['numbers'],
+    symbols: ['symbols']
+  }
+  const modes = String(value || '')
+      .split(',')
+      .flatMap(item => aliases[item.trim()] || [item.trim()])
+      .filter(item => ['letters', 'numbers', 'symbols'].includes(item))
+  const unique = Array.from(new Set(modes))
+  return unique.length ? unique : ['letters', 'numbers']
 }
 
 function normalizeLength(value) {
@@ -391,8 +402,9 @@ async function latest() {
 .current-address {
   width: 100%;
   padding: 3px 0 0;
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
+  color: var(--el-text-color-regular);
+  font-size: 14px;
+  line-height: 20px;
   word-break: break-all;
 }
 

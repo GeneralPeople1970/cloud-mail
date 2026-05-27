@@ -72,6 +72,7 @@ const settingService = {
 		setting.randomEmailSubdomains ??= '';
 		setting.randomEmailLength ??= 10;
 		setting.randomEmailMode ??= 'alnum';
+		setting.debug ??= 0;
 
 		setting.linuxdoClientId = c.env.linuxdo_client_id;
 		setting.linuxdoCallbackUrl = c.env.linuxdo_callback_url;
@@ -156,8 +157,12 @@ const settingService = {
 			params.randomEmailLength = Number.isNaN(length) ? 10 : Math.min(32, Math.max(4, length));
 		}
 
-		if (params.randomEmailMode !== undefined && !['alnum', 'letters', 'numbers', 'hex'].includes(params.randomEmailMode)) {
-			params.randomEmailMode = 'alnum';
+		if (params.randomEmailMode !== undefined) {
+			params.randomEmailMode = this.normalizeRandomEmailMode(params.randomEmailMode);
+		}
+
+		if (params.debug !== undefined) {
+			params.debug = Number(params.debug) === 1 ? 1 : 0;
 		}
 
 		params.resendTokens = JSON.stringify(resendTokens);
@@ -257,8 +262,26 @@ const settingService = {
 			randomEmailSubdomains: settingRow.randomEmailSubdomains,
 			randomEmailLength: settingRow.randomEmailLength,
 			randomEmailMode: settingRow.randomEmailMode,
+			debug: settingRow.debug,
 			projectLink: settingRow.projectLink
 		};
+	},
+
+	normalizeRandomEmailMode(value) {
+		const allowed = ['letters', 'numbers', 'symbols'];
+		const aliases = {
+			alnum: ['letters', 'numbers'],
+			hex: ['letters', 'numbers'],
+			letters: ['letters'],
+			numbers: ['numbers'],
+			symbols: ['symbols']
+		};
+		const parts = String(value || '')
+			.split(',')
+			.flatMap(item => aliases[item.trim()] || [item.trim()])
+			.filter(item => allowed.includes(item));
+		const selected = Array.from(new Set(parts));
+		return selected.length ? selected.join(',') : 'letters,numbers';
 	},
 
 };

@@ -235,19 +235,19 @@
               <div class="setting-item">
                 <div><span>{{ $t('randomEmailMode') }}</span></div>
                 <div>
-                  <el-select
-                      @change="changeField('randomEmailMode', $event)"
-                      :style="`width: ${ locale === 'en' ? 120 : 100 }px;`"
-                      v-model="setting.randomEmailMode"
-                      placeholder="Select"
+                  <el-checkbox-group
+                      class="random-mode-options"
+                      v-model="randomEmailModeValues"
                   >
-                    <el-option
+                    <el-checkbox-button
                         v-for="item in randomEmailModeOptions"
                         :key="item.value"
-                        :label="item.label"
+                        :label="item.value"
                         :value="item.value"
-                    />
-                  </el-select>
+                    >
+                      {{ item.label }}
+                    </el-checkbox-button>
+                  </el-checkbox-group>
                 </div>
               </div>
               <div class="setting-item">
@@ -258,9 +258,33 @@
                   </el-tooltip>
                 </div>
                 <div class="forward">
-                  <el-button class="opt-button" size="small" type="primary" @click="openRandomEmailSubdomains">
+                  <el-button class="opt-button random-subdomain-button" size="small" type="primary" @click="openRandomEmailSubdomains">
+                    <span>{{ randomEmailSubdomainLabel }}</span>
                     <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
                   </el-button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="card-title">Debug</div>
+            <div class="card-content">
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('debugSwitch') }}</span>
+                  <el-tooltip effect="dark" :content="$t('debugSwitchDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-switch
+                      :before-change="beforeChange"
+                      :active-value="1"
+                      :inactive-value="0"
+                      v-model="setting.debug"
+                      @change="changeField('debug', $event)"
+                  />
                 </div>
               </div>
             </div>
@@ -897,6 +921,7 @@ import loading from "@/components/loading/index.vue";
 import {getTextWidth} from "@/utils/text.js";
 import {fileToBase64} from "@/utils/file-utils.js"
 import {useI18n} from 'vue-i18n';
+import {setDebugEnabled} from "@/utils/debug-capture.js";
 
 defineOptions({
   name: 'sys-setting'
@@ -997,11 +1022,27 @@ const authRefreshOptions = computed(() => [
 ])
 
 const randomEmailModeOptions = computed(() => [
-  {label: t('randomEmailModeAlnum'), value: 'alnum'},
   {label: t('randomEmailModeLetters'), value: 'letters'},
   {label: t('randomEmailModeNumbers'), value: 'numbers'},
-  {label: t('randomEmailModeHex'), value: 'hex'},
+  {label: t('randomEmailModeSymbols'), value: 'symbols'},
 ])
+
+const randomEmailModeValues = computed({
+  get() {
+    return normalizeRandomEmailModeValue(setting.value.randomEmailMode)
+  },
+  set(value) {
+    if (!settingReady.value || settingLoading.value) return
+    const mode = normalizeRandomEmailModeValue(value).join(',')
+    setting.value.randomEmailMode = mode
+    changeField('randomEmailMode', mode)
+  }
+})
+
+const randomEmailSubdomainLabel = computed(() => {
+  const count = randomEmailSubdomains.value.length
+  return count ? `${count}${t('randomEmailSubdomainCount')}` : t('notConfigured')
+})
 
 const tgChatId = ref([])
 const customDomain = ref('')
@@ -1060,7 +1101,8 @@ function normalizeSettingData(settingData = {}) {
   data.emailPrefixFilter = Array.isArray(data.emailPrefixFilter) ? data.emailPrefixFilter : toList(data.emailPrefixFilter)
   data.randomEmailSubdomains = data.randomEmailSubdomains || ''
   data.randomEmailLength = Number(data.randomEmailLength) || 10
-  data.randomEmailMode = ['alnum', 'letters', 'numbers', 'hex'].includes(data.randomEmailMode) ? data.randomEmailMode : 'alnum'
+  data.randomEmailMode = normalizeRandomEmailModeValue(data.randomEmailMode).join(',')
+  data.debug = Number(data.debug) === 1 ? 1 : 0
   data.loginOpacity = Number(data.loginOpacity ?? 1)
   data.loginDarkenFactor = normalizeFactor(data.loginDarkenFactor)
   data.minEmailPrefix = Number(data.minEmailPrefix) || 1
@@ -1074,6 +1116,23 @@ function toList(value) {
   if (!value) return []
   if (Array.isArray(value)) return value
   return `${value}`.split(',').map(item => item.trim()).filter(Boolean)
+}
+
+function normalizeRandomEmailModeValue(value) {
+  const allowed = ['letters', 'numbers', 'symbols']
+  const aliases = {
+    alnum: ['letters', 'numbers'],
+    hex: ['letters', 'numbers'],
+    letters: ['letters'],
+    numbers: ['numbers'],
+    symbols: ['symbols']
+  }
+  const rawList = Array.isArray(value) ? value : `${value || ''}`.split(',')
+  const selected = rawList
+      .flatMap(item => aliases[String(item).trim()] || [String(item).trim()])
+      .filter(item => allowed.includes(item))
+  const unique = Array.from(new Set(selected))
+  return unique.length ? unique : ['letters', 'numbers']
 }
 
 
@@ -1122,19 +1181,6 @@ const resendList = computed(() => {
   return list;
 });
 
-function getUpdate() {
-  if (getUpdateErrorCount > 5 || !getUpdateErrorCount) return
-  axios.get('https://api.github.com/repos/maillab/cloud-mail/releases/latest').then(({data}) => {
-    hasUpdate.value = data.name !== currentVersion
-    getUpdateErrorCount = 0
-  }).catch(e => {
-    getUpdateErrorCount++
-    setTimeout(() => {
-      getUpdate()
-    }, 2000)
-    console.error('检查更新失败：', e)
-  })
-}
 
 function saveAddVerifyCount() {
   if (!addVerifyCount.value) {
@@ -1633,6 +1679,8 @@ function editSetting(settingForm, refreshStatus = true) {
     if (setting.value.manyEmail === 1) {
       accountStore.currentAccountId = userStore.user.account.accountId;
     }
+    settingStore.settings = {...settingStore.settings, ...settingForm}
+    setDebugEnabled(Number(settingStore.settings.debug) === 1)
     if (refreshStatus) {
       getSettings()
     }
@@ -2004,6 +2052,31 @@ function editSetting(settingForm, refreshStatus = true) {
 
 .opt-button {
   width: fit-content !important;
+}
+
+.random-mode-options {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  :deep(.el-checkbox-button__inner) {
+    padding: 5px 10px;
+  }
+}
+
+.random-subdomain-button {
+  width: 150px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .email-prefix {

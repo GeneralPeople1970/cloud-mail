@@ -1,5 +1,22 @@
 const DEBUG_ERROR_KEY = 'cloud-mail-debug-errors';
+const DEBUG_ENABLED_KEY = 'cloud-mail-debug-enabled';
 const MAX_ERRORS = 20;
+
+export function setDebugEnabled(enabled) {
+    try {
+        localStorage.setItem(DEBUG_ENABLED_KEY, enabled ? '1' : '0');
+    } catch (e) {
+        // Ignore storage failures; debug capture is best-effort only.
+    }
+}
+
+export function isDebugEnabled() {
+    try {
+        return localStorage.getItem(DEBUG_ENABLED_KEY) === '1';
+    } catch (e) {
+        return false;
+    }
+}
 
 function readErrors() {
     try {
@@ -36,6 +53,10 @@ function toStack(value) {
 }
 
 export function recordDebugError(type, payload = {}) {
+    if (!isDebugEnabled() && !payload.force) {
+        return;
+    }
+
     const errors = readErrors();
     errors.unshift({
         type,

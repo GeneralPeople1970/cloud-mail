@@ -10,6 +10,7 @@ export const useSettingStore = defineStore('setting', {
             randomEmailSubdomains: '',
             randomEmailLength: 10,
             randomEmailMode: 'alnum',
+            debug: 0,
         },
         lang: '',
     }),

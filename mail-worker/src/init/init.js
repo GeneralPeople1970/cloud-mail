@@ -40,6 +40,7 @@ const dbInit = {
 			await this.addColumnIfMissing(c, 'setting', 'random_email_subdomains', `ALTER TABLE setting ADD COLUMN random_email_subdomains TEXT NOT NULL DEFAULT '';`);
 			await this.addColumnIfMissing(c, 'setting', 'random_email_length', `ALTER TABLE setting ADD COLUMN random_email_length INTEGER NOT NULL DEFAULT 10;`);
 			await this.addColumnIfMissing(c, 'setting', 'random_email_mode', `ALTER TABLE setting ADD COLUMN random_email_mode TEXT NOT NULL DEFAULT 'alnum';`);
+			await this.addColumnIfMissing(c, 'setting', 'debug', `ALTER TABLE setting ADD COLUMN debug INTEGER NOT NULL DEFAULT 0;`);
 		} catch (e) {
 			console.warn(`跳过字段添加：${e.message}`);
 		}

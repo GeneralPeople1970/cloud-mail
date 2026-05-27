@@ -116,6 +116,7 @@ const storeSnapshot = computed(() => ({
     length: settings.value?.randomEmailLength,
     mode: settings.value?.randomEmailMode
   },
+  debug: settings.value?.debug,
   user: {
     hasUser: Boolean(userStore.user?.userId || userStore.user?.email),
     permKeys: Array.isArray(userStore.user?.permKeys) ? userStore.user.permKeys : []
