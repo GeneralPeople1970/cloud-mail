@@ -897,7 +897,6 @@ import loading from "@/components/loading/index.vue";
 import {getTextWidth} from "@/utils/text.js";
 import {fileToBase64} from "@/utils/file-utils.js"
 import {useI18n} from 'vue-i18n';
-import axios from "axios";
 
 defineOptions({
   name: 'sys-setting'
@@ -905,7 +904,6 @@ defineOptions({
 
 const currentVersion = 'v3.0.0'
 const hasUpdate = ref(false)
-let getUpdateErrorCount = 1;
 const {t, locale} = useI18n();
 const firstLoading = ref(true)
 const settingReady = ref(false)
@@ -1025,14 +1023,13 @@ const tgMsgTextOption = [{label: t('show'), value: 'show'}, {label: t('hide'), v
 const tgMsgLabelWidth = computed(() => locale.value === 'en' ? '120px' : '100px');
 
 getSettings()
-getUpdate()
 
 function getSettings() {
   settingReady.value = false
   settingQuery().then(settingData => {
-    setting.value = settingData
-    settingStore.domainList = settingData.domainList;
-    resendTokenForm.domain = setting.value.domainList[0]
+    setting.value = normalizeSettingData(settingData)
+    settingStore.domainList = setting.value.domainList;
+    resendTokenForm.domain = setting.value.domainList[0] || ''
     loginOpacity.value = setting.value.loginOpacity
     loginDarkenFactor.value = normalizeFactor(setting.value.loginDarkenFactor)
     minEmailPrefix.value = setting.value.minEmailPrefix
@@ -1054,6 +1051,29 @@ function getSettings() {
   }).catch(() => {
     firstLoading.value = false
   })
+}
+
+function normalizeSettingData(settingData = {}) {
+  const data = {...settingData}
+  data.domainList = Array.isArray(data.domainList) ? data.domainList : []
+  data.resendTokens = data.resendTokens && typeof data.resendTokens === 'object' && !Array.isArray(data.resendTokens) ? data.resendTokens : {}
+  data.emailPrefixFilter = Array.isArray(data.emailPrefixFilter) ? data.emailPrefixFilter : toList(data.emailPrefixFilter)
+  data.randomEmailSubdomains = data.randomEmailSubdomains || ''
+  data.randomEmailLength = Number(data.randomEmailLength) || 10
+  data.randomEmailMode = ['alnum', 'letters', 'numbers', 'hex'].includes(data.randomEmailMode) ? data.randomEmailMode : 'alnum'
+  data.loginOpacity = Number(data.loginOpacity ?? 1)
+  data.loginDarkenFactor = normalizeFactor(data.loginDarkenFactor)
+  data.minEmailPrefix = Number(data.minEmailPrefix) || 1
+  data.addVerifyCount = Number(data.addVerifyCount) || 1
+  data.regVerifyCount = Number(data.regVerifyCount) || 1
+  data.forcePathStyle = data.forcePathStyle ?? 1
+  return data
+}
+
+function toList(value) {
+  if (!value) return []
+  if (Array.isArray(value)) return value
+  return `${value}`.split(',').map(item => item.trim()).filter(Boolean)
 }
 
 
@@ -1082,7 +1102,7 @@ function resetAddS3Form() {
 
 const resendList = computed(() => {
 
-  let list = Object.keys(setting.value.resendTokens).map(key => {
+  let list = Object.keys(setting.value.resendTokens || {}).map(key => {
     return {
       key: key,
       value: setting.value.resendTokens[key]
