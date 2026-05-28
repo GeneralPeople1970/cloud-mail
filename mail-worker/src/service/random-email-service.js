@@ -7,6 +7,7 @@ import emailUtils from '../utils/email-utils';
 import settingService from './setting-service';
 import accountService from './account-service';
 import emailService from './email-service';
+import roleService from './role-service';
 import BizError from '../error/biz-error';
 import { t } from '../i18n/i18n';
 
@@ -94,7 +95,7 @@ const randomEmailService = {
 
 		const emailDomain = emailUtils.getDomain(address).toLowerCase();
 		const settings = await settingService.query(c);
-		const domainList = this.normalizeDomains(settings.domainList?.length ? settings.domainList : c.env.domain);
+		const domainList = await this.userDomainList(c, settings.domainList?.length ? settings.domainList : c.env.domain);
 		const subdomains = this.normalizeSubdomains(settings.randomEmailSubdomains);
 
 		if (!this.isAllowedDomain(emailDomain, domainList, subdomains)) {
@@ -142,6 +143,29 @@ const randomEmailService = {
 			.map(domain => String(domain || '').trim().toLowerCase())
 			.filter(Boolean)
 			.map(domain => domain.startsWith('@') ? domain : '@' + domain)));
+	},
+
+	async userDomainList(c, domains) {
+		const domainList = this.normalizeDomains(domains);
+		const userRow = c.get?.('user');
+
+		if (!userRow || userRow.email === c.env.admin) {
+			return domainList;
+		}
+
+		const roleRow = await roleService.selectByUserId(c, userRow.userId);
+		const availDomains = String(roleRow?.availDomain || '')
+			.split(',')
+			.map(item => item.trim().toLowerCase())
+			.filter(Boolean);
+
+		if (availDomains.length === 0) {
+			return domainList;
+		}
+
+		return domainList.filter(domain => {
+			return availDomains.includes(domain.replace(/^@/, '').toLowerCase());
+		});
 	},
 
 	normalizeSubdomains(value) {

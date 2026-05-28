@@ -13,9 +13,9 @@
         <span class="form-title">{{ settingStore.settings.title }}</span>
         <span class="form-desc" v-if="show === 'login'">{{ $t('loginTitle') }}</span>
         <span class="form-desc" v-else>{{ $t('regTitle') }}</span>
-        <div v-show="show === 'login'">
+        <form v-show="show === 'login'" autocomplete="on" @submit.prevent="submit">
           <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="form.email"
-                    type="text" :placeholder="$t('emailAccount')" autocomplete="off">
+                    id="login-email" name="username" type="text" :placeholder="$t('emailAccount')" autocomplete="username">
             <template #append v-if="!hideLoginDomain">
               <div @click.stop="openSelect">
                 <el-select
@@ -39,18 +39,18 @@
               </div>
             </template>
           </el-input>
-          <el-input v-model="form.password" :placeholder="$t('password')" type="password" autocomplete="off">
+          <el-input v-model="form.password" id="login-password" name="password" :placeholder="$t('password')" type="password" autocomplete="current-password">
           </el-input>
-          <el-button class="btn" type="primary" @click="submit" :loading="loginLoading"
+          <el-button class="btn" type="primary" native-type="submit" :loading="loginLoading"
           >{{ $t('loginBtn') }}
           </el-button>
           <el-button class="btn" v-if="settingStore.settings.linuxdoSwitch"  style="margin-top: 10px"  @click="linuxDoLogin">
             <el-avatar src="/image/linuxdo.webp" :size="18" style="margin-right: 10px" />LinuxDo
           </el-button>
-        </div>
-        <div v-show="show !== 'login'">
+        </form>
+        <form v-show="show !== 'login'" autocomplete="on" @submit.prevent="submitRegister">
           <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="registerForm.email" type="text" :placeholder="$t('emailAccount')"
-                    autocomplete="off">
+                    id="register-email" name="username" autocomplete="username">
             <template #append v-if="!hideLoginDomain">
               <div @click.stop="openSelect">
                 <el-select
@@ -74,9 +74,9 @@
               </div>
             </template>
           </el-input>
-          <el-input v-model="registerForm.password" :placeholder="$t('password')" type="password" autocomplete="off"/>
+          <el-input v-model="registerForm.password" id="register-password" name="new-password" :placeholder="$t('password')" type="password" autocomplete="new-password"/>
           <el-input v-model="registerForm.confirmPassword" :placeholder="$t('confirmPwd')" type="password"
-                    autocomplete="off"/>
+                    id="register-confirm-password" name="confirm-password" autocomplete="new-password"/>
           <el-input v-if="settingStore.settings.regKey === 0" v-model="registerForm.code" :placeholder="$t('regKey')"
                     type="text" autocomplete="off"/>
           <el-input v-if="settingStore.settings.regKey === 2" v-model="registerForm.code"
@@ -91,13 +91,13 @@
           >
             <span style="font-size: 12px;color: #F56C6C" v-if="botJsError">{{ $t('verifyModuleFailed') }}</span>
           </div>
-          <el-button class="btn" style="margin: 0" type="primary" @click="submitRegister" :loading="registerLoading"
+          <el-button class="btn" style="margin: 0" type="primary" native-type="submit" :loading="registerLoading"
           >{{ $t('regBtn') }}
           </el-button>
           <el-button v-if="settingStore.settings.linuxdoSwitch" class="btn" style="margin-top: 10px"  @click="linuxDoLogin">
             <el-avatar src="/image/linuxdo.webp" :size="18" style="margin-right: 10px" />LinuxDo
           </el-button>
-        </div>
+        </form>
         <template v-if="settingStore.settings.register === 0">
           <div class="switch" @click="show = 'register'" v-if="show === 'login'">{{ $t('noAccount') }}
             <span>{{ $t('regSwitch') }}</span></div>
@@ -108,7 +108,7 @@
     </div>
     <el-dialog class="bind-dialog" v-model="showBindForm"  title="注册邮箱" >
       <div class="bind-container">
-        <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="bindForm.email" type="text" :placeholder="$t('emailAccount')" autocomplete="off">
+        <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="bindForm.email" id="bind-email" name="username" type="text" :placeholder="$t('emailAccount')" autocomplete="username">
           <template #append v-if="!hideLoginDomain">
             <div @click.stop="openSelect">
               <el-select
@@ -262,11 +262,15 @@ const openSelect = () => {
 }
 
 const getFullEmail = (email) => {
-  return hideLoginDomain.value ? email : email + suffix.value
+  const value = String(email || '').trim()
+  if (isEmail(value)) {
+    return value
+  }
+  return hideLoginDomain.value ? value : value + suffix.value
 }
 
 const getEmailName = (email) => {
-  return email.split('@')[0]
+  return String(email || '').split('@')[0]
 }
 
 function linuxDoLogin() {
@@ -410,7 +414,7 @@ const submit = () => {
 
 async function saveToken(token) {
   localStorage.setItem('token', token)
-  refreshWebsiteConfig()
+  await refreshWebsiteConfig()
   const user = await loginUserInfo();
   accountStore.currentAccountId = user.account.accountId;
   accountStore.currentAccount = user.account;
@@ -426,7 +430,7 @@ async function saveToken(token) {
 }
 
 function refreshWebsiteConfig() {
-  websiteConfig().then(setting => {
+  return websiteConfig().then(setting => {
     settingStore.settings = setting
     settingStore.domainList = setting.domainList
     if (!suffix.value && setting.domainList.length > 0) {

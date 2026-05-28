@@ -1,5 +1,7 @@
 import KvConst from '../const/kv-const';
 import setting from '../entity/setting';
+import user from '../entity/user';
+import role from '../entity/role';
 import orm from '../entity/orm';
 import {verifyRecordType} from '../const/entity-const';
 import fileUtils from '../utils/file-utils';
@@ -8,7 +10,8 @@ import constant from '../const/constant';
 import BizError from '../error/biz-error';
 import {t} from '../i18n/i18n'
 import verifyRecordService from './verify-record-service';
-import userContext from '../security/user-context';
+import JwtUtils from '../utils/jwt-utils';
+import {eq} from 'drizzle-orm';
 
 const settingService = {
 
@@ -227,7 +230,8 @@ const settingService = {
 	async websiteConfig(c) {
 
 		const settingRow = await this.get(c, true);
-		const token = await userContext.getToken(c);
+		const authInfo = await this.getRequestAuthInfo(c);
+		const domainList = await this.filterDomainListByAuth(c, settingRow.domainList, authInfo);
 
 		return {
 			register: settingRow.register,
@@ -243,7 +247,7 @@ const settingService = {
 			background: settingRow.background,
 			loginOpacity: settingRow.loginOpacity,
 			loginDarkenFactor: settingRow.loginDarkenFactor,
-			domainList: settingRow.loginDomain === 1 && !token ? [] : settingRow.domainList,
+			domainList: settingRow.loginDomain === 1 && !authInfo ? [] : domainList,
 			regKey: settingRow.regKey,
 			regVerifyOpen: settingRow.regVerifyOpen,
 			addVerifyOpen: settingRow.addVerifyOpen,
@@ -276,6 +280,43 @@ const settingService = {
 			.filter(item => allowed.includes(item));
 		const selected = Array.from(new Set(parts));
 		return selected.length ? selected.join(',') : 'letters,numbers';
+	},
+
+	async getRequestAuthInfo(c) {
+		const jwt = c.req.header(constant.TOKEN_HEADER);
+		const payload = await JwtUtils.verifyToken(c, jwt);
+		if (!payload) return null;
+
+		const authInfo = await c.env.kv.get(KvConst.AUTH_INFO + payload.userId, { type: 'json' });
+		if (!authInfo?.tokens?.includes(payload.token)) return null;
+
+		return authInfo;
+	},
+
+	async filterDomainListByAuth(c, domainList, authInfo) {
+		if (!authInfo?.user?.userId || authInfo.user.email === c.env.admin) {
+			return domainList;
+		}
+
+		const row = await orm(c)
+			.select({ availDomain: role.availDomain })
+			.from(user)
+			.leftJoin(role, eq(role.roleId, user.type))
+			.where(eq(user.userId, authInfo.user.userId))
+			.get();
+
+		const availDomains = String(row?.availDomain || '')
+			.split(',')
+			.map(item => item.trim().toLowerCase())
+			.filter(Boolean);
+
+		if (availDomains.length === 0) {
+			return domainList;
+		}
+
+		return domainList.filter(domain => {
+			return availDomains.includes(String(domain || '').replace(/^@/, '').toLowerCase());
+		});
 	},
 
 };

@@ -113,6 +113,20 @@ const domainPrefixOptions = computed(() => {
       .filter(prefix => /^[a-z0-9-]+$/.test(prefix))))
 })
 
+const allowedEmailDomains = computed(() => {
+  const domains = []
+
+  for (const baseDomain of baseDomainList.value) {
+    domains.push(baseDomain)
+
+    for (const prefix of domainPrefixOptions.value) {
+      domains.push(`${prefix}.${baseDomain}`)
+    }
+  }
+
+  return Array.from(new Set(domains))
+})
+
 const currentAddress = computed(() => {
   if (!randomLocal.value || !baseDomain.value) {
     return ''
@@ -124,12 +138,15 @@ const currentAddress = computed(() => {
 
 const cache = localStorage.getItem('random-email-params')
 if (cache) {
-  const localParams = JSON.parse(cache)
-  randomLocal.value = sanitizeLocalPart(localParams.randomLocal || '')
-  domainPrefix.value = sanitizeDomainPrefix(localParams.domainPrefix || '')
-  baseDomain.value = localParams.baseDomain || ''
-  activeAddress.value = localParams.activeAddress || ''
-  params.timeSort = localParams.timeSort || 0
+  try {
+    const localParams = JSON.parse(cache)
+    randomLocal.value = sanitizeLocalPart(localParams.randomLocal || '')
+    domainPrefix.value = sanitizeDomainPrefix(localParams.domainPrefix || '')
+    baseDomain.value = sanitizeBaseDomain(localParams.baseDomain || '')
+    params.timeSort = Number(localParams.timeSort) || 0
+  } catch (e) {
+    localStorage.removeItem('random-email-params')
+  }
 }
 
 watch(() => baseDomainList.value, (list) => {
@@ -153,11 +170,16 @@ watch(() => domainPrefixOptions.value, (list) => {
   immediate: true
 })
 
+watch(() => currentAddress.value, () => {
+  ensureActiveAddress()
+}, {
+  immediate: true
+})
+
 watch(() => ({
   randomLocal: randomLocal.value,
   domainPrefix: domainPrefix.value,
   baseDomain: baseDomain.value,
-  activeAddress: activeAddress.value,
   timeSort: params.timeSort
 }), (value) => {
   localStorage.setItem('random-email-params', JSON.stringify(value))
@@ -169,9 +191,7 @@ if (!randomLocal.value) {
   generateRandom(false)
 }
 
-if (!activeAddress.value && currentAddress.value) {
-  activeAddress.value = currentAddress.value
-}
+ensureActiveAddress()
 
 onMounted(() => {
   latest()
@@ -183,6 +203,33 @@ function sanitizeLocalPart(value) {
 
 function sanitizeDomainPrefix(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9-]/g, '')
+}
+
+function sanitizeBaseDomain(value) {
+  return String(value || '').toLowerCase().replace(/^@/, '').replace(/[^a-z0-9.-]/g, '')
+}
+
+function getEmailDomain(address) {
+  const parts = String(address || '').toLowerCase().split('@')
+  return parts.length === 2 ? parts[1] : ''
+}
+
+function isAllowedAddress(address) {
+  const domain = getEmailDomain(address)
+  return Boolean(domain && allowedEmailDomains.value.includes(domain))
+}
+
+function ensureActiveAddress() {
+  if (!currentAddress.value || !isEmail(currentAddress.value) || !isAllowedAddress(currentAddress.value)) {
+    activeAddress.value = ''
+    return ''
+  }
+
+  if (!activeAddress.value || !isAllowedAddress(activeAddress.value)) {
+    activeAddress.value = currentAddress.value
+  }
+
+  return activeAddress.value
 }
 
 function randomText() {
@@ -274,6 +321,15 @@ function search() {
     return
   }
 
+  if (!isAllowedAddress(currentAddress.value)) {
+    ElMessage({
+      message: t('notEmailMsg'),
+      type: 'error',
+      plain: true
+    })
+    return
+  }
+
   activeAddress.value = currentAddress.value
   randomEmailScroll.value.refreshList()
 }
@@ -293,7 +349,20 @@ function jumpContent(email) {
 }
 
 function getEmailList(emailId, size) {
-  const address = activeAddress.value || currentAddress.value
+  const address = ensureActiveAddress()
+
+  if (!address) {
+    return Promise.resolve({
+      list: [],
+      total: 0,
+      latestEmail: {
+        emailId: 0,
+        accountId: 0,
+        userId: 0,
+      }
+    })
+  }
+
   return randomEmailList({
     address,
     emailId,
