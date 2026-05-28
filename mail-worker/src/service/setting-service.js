@@ -284,6 +284,8 @@ const settingService = {
 
 	async getRequestAuthInfo(c) {
 		const jwt = c.req.header(constant.TOKEN_HEADER);
+		if (!jwt || jwt === 'null' || jwt === 'undefined') return null;
+
 		const payload = await JwtUtils.verifyToken(c, jwt);
 		if (!payload) return null;
 
