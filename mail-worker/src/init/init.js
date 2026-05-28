@@ -41,6 +41,8 @@ const dbInit = {
 			await this.addColumnIfMissing(c, 'setting', 'random_email_length', `ALTER TABLE setting ADD COLUMN random_email_length INTEGER NOT NULL DEFAULT 10;`);
 			await this.addColumnIfMissing(c, 'setting', 'random_email_mode', `ALTER TABLE setting ADD COLUMN random_email_mode TEXT NOT NULL DEFAULT 'letters,numbers';`);
 			await this.addColumnIfMissing(c, 'setting', 'debug', `ALTER TABLE setting ADD COLUMN debug INTEGER NOT NULL DEFAULT 0;`);
+			await this.addColumnIfMissing(c, 'setting', 'auth_domain_source', `ALTER TABLE setting ADD COLUMN auth_domain_source TEXT NOT NULL DEFAULT 'cloudflare';`);
+			await this.addColumnIfMissing(c, 'setting', 'auth_domain_list', `ALTER TABLE setting ADD COLUMN auth_domain_list TEXT NOT NULL DEFAULT '';`);
 		} catch (e) {
 			console.warn(`跳过字段添加：${e.message}`);
 		}

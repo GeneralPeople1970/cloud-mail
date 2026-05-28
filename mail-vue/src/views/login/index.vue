@@ -191,9 +191,12 @@ const registerForm = reactive({
   confirmPassword: '',
   code: null
 })
-const domainList = settingStore.domainList;
+const domainList = computed(() => {
+  const list = settingStore.settings.loginRegisterDomainList
+  return Array.isArray(list) && list.length > 0 ? list : settingStore.domainList
+});
 const registerLoading = ref(false)
-suffix.value = domainList[0]
+suffix.value = domainList.value[0]
 const verifyShow = ref(false)
 let verifyToken = ''
 let turnstileId = null
@@ -433,8 +436,11 @@ function refreshWebsiteConfig() {
   return websiteConfig().then(setting => {
     settingStore.settings = setting
     settingStore.domainList = setting.domainList
-    if (!suffix.value && setting.domainList.length > 0) {
-      suffix.value = setting.domainList[0]
+    const visibleDomains = Array.isArray(setting.loginRegisterDomainList) && setting.loginRegisterDomainList.length > 0
+        ? setting.loginRegisterDomainList
+        : setting.domainList
+    if ((!suffix.value || !visibleDomains.includes(suffix.value)) && visibleDomains.length > 0) {
+      suffix.value = visibleDomains[0]
     }
     document.title = setting.title
   }).catch(e => {

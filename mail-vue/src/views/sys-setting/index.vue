@@ -74,6 +74,61 @@
             </div>
           </div>
 
+          <div class="settings-card">
+            <div class="card-title">{{ $t('authDomainSetting') }}</div>
+            <div class="card-content">
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('authDomainSource') }}</span>
+                  <el-tooltip effect="dark" :content="$t('authDomainSourceDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-select
+                      class="auth-domain-source-select"
+                      size="small"
+                      v-model="setting.authDomainSource"
+                      @change="changeAuthDomainSource"
+                  >
+                    <el-option
+                        v-for="item in authDomainSourceOptions"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                    />
+                  </el-select>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('authDomainList') }}</span>
+                  <el-tooltip effect="dark" :content="$t('authDomainListDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-select
+                      class="auth-domain-list-select"
+                      size="small"
+                      v-model="authDomainList"
+                      multiple
+                      :disabled="setting.authDomainSource !== 'custom'"
+                      :placeholder="$t('select')"
+                      @change="changeAuthDomainList"
+                  >
+                    <el-option
+                        v-for="item in setting.domainList"
+                        :key="item"
+                        :label="item"
+                        :value="item"
+                    />
+                  </el-select>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Personalization Settings Card -->
           <div class="settings-card">
             <div class="card-title">{{ $t('customization') }}</div>
@@ -979,6 +1034,7 @@ const blackListForm = ref({
 })
 const aiCodeFilter = ref([])
 const randomEmailSubdomains = ref([])
+const authDomainList = ref([])
 
 const authRefreshOptions = computed(() => [
   {label: t('disable'), value: 0},
@@ -987,6 +1043,11 @@ const authRefreshOptions = computed(() => [
   {label: '10s', value: 10},
   {label: '15s', value: 15},
   {label: '20s', value: 20},
+])
+
+const authDomainSourceOptions = computed(() => [
+  {label: t('authDomainSourceCloudflare'), value: 'cloudflare'},
+  {label: t('authDomainSourceCustom'), value: 'custom'},
 ])
 
 const randomEmailModeOptions = computed(() => [
@@ -1066,6 +1127,7 @@ function getSettings() {
     resetBlackList()
     resetAiCodeFilter()
     resetRandomEmailSubdomains()
+    resetAuthDomainList()
     nextTick(() => {
       settingReady.value = true
     })
@@ -1083,6 +1145,9 @@ function normalizeSettingData(settingData = {}) {
   data.randomEmailLength = Number(data.randomEmailLength) || 10
   data.randomEmailMode = normalizeRandomEmailModeValue(data.randomEmailMode).join(',')
   data.debug = Number(data.debug) === 1 ? 1 : 0
+  data.authDomainSource = data.authDomainSource === 'custom' ? 'custom' : 'cloudflare'
+  data.authDomainList = normalizeAuthDomainList(data.authDomainList, data.domainList).join(',')
+  data.loginRegisterDomainList = Array.isArray(data.loginRegisterDomainList) ? data.loginRegisterDomainList : data.domainList
   data.loginOpacity = Number(data.loginOpacity ?? 1)
   data.loginDarkenFactor = normalizeFactor(data.loginDarkenFactor)
   data.minEmailPrefix = Number(data.minEmailPrefix) || 1
@@ -1106,6 +1171,23 @@ function normalizeRandomEmailModeValue(value) {
       .filter(item => allowed.includes(item))
   const unique = Array.from(new Set(selected))
   return unique.length ? unique : ['letters', 'numbers']
+}
+
+function normalizeDomain(value) {
+  const domain = String(value || '').trim().toLowerCase().replace(/^@/, '')
+  return domain ? `@${domain}` : ''
+}
+
+function normalizeAuthDomainList(value, domainList = []) {
+  const allowed = new Set((Array.isArray(domainList) ? domainList : [])
+      .map(normalizeDomain)
+      .filter(Boolean))
+  const rawList = Array.isArray(value) ? value : `${value || ''}`.split(',')
+  return Array.from(new Set(
+      rawList
+          .map(normalizeDomain)
+          .filter(domain => domain && allowed.has(domain))
+  ))
 }
 
 function randomControlWidth(width) {
@@ -1399,6 +1481,10 @@ function resetRandomEmailSubdomains() {
   randomEmailSubdomains.value = setting.value.randomEmailSubdomains ? setting.value.randomEmailSubdomains.split(',') : []
 }
 
+function resetAuthDomainList() {
+  authDomainList.value = normalizeAuthDomainList(setting.value.authDomainList, setting.value.domainList)
+}
+
 function saveEmailPrefix() {
   const form = {}
   form.minEmailPrefix = minEmailPrefix.value
@@ -1414,6 +1500,21 @@ function saveRandomEmailSubdomains() {
   const segments = normalizeRandomEmailSubdomains(randomEmailSubdomains.value)
   randomEmailSubdomains.value = segments
   editSetting({randomEmailSubdomains: segments + ''})
+}
+
+function changeAuthDomainSource(value) {
+  if (!settingReady.value) return
+  const source = value === 'custom' ? 'custom' : 'cloudflare'
+  setting.value.authDomainSource = source
+  editSetting({authDomainSource: source}, false)
+}
+
+function changeAuthDomainList(value) {
+  if (!settingReady.value) return
+  const domains = normalizeAuthDomainList(value, setting.value.domainList)
+  authDomainList.value = domains
+  setting.value.authDomainList = domains.join(',')
+  editSetting({authDomainList: domains.join(',')}, false)
 }
 
 const opacityChange = debounce(doOpacityChange, 1000, {
@@ -2048,6 +2149,15 @@ function editSetting(settingForm, refreshStatus = true) {
 }
 
 .random-subdomain-input {
+  max-width: 100%;
+}
+
+.auth-domain-source-select {
+  width: 150px;
+}
+
+.auth-domain-list-select {
+  width: 240px;
   max-width: 100%;
 }
 

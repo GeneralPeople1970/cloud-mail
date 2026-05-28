@@ -77,6 +77,8 @@ const settingService = {
 		setting.randomEmailLength ??= 10;
 		setting.randomEmailMode = this.normalizeRandomEmailMode(setting.randomEmailMode);
 		setting.debug ??= 0;
+		setting.authDomainSource = this.normalizeAuthDomainSource(setting.authDomainSource);
+		setting.authDomainList = this.normalizeAuthDomainList(setting.authDomainList, domainList).join(',');
 
 		setting.linuxdoClientId = c.env.linuxdo_client_id;
 		setting.linuxdoCallbackUrl = c.env.linuxdo_callback_url;
@@ -169,6 +171,14 @@ const settingService = {
 			params.debug = Number(params.debug) === 1 ? 1 : 0;
 		}
 
+		if (params.authDomainSource !== undefined) {
+			params.authDomainSource = this.normalizeAuthDomainSource(params.authDomainSource);
+		}
+
+		if (params.authDomainList !== undefined) {
+			params.authDomainList = this.normalizeAuthDomainList(params.authDomainList, settingData.domainList).join(',');
+		}
+
 		params.resendTokens = JSON.stringify(resendTokens);
 		await orm(c).update(setting).set({ ...params }).returning().get();
 		await this.refresh(c);
@@ -232,6 +242,8 @@ const settingService = {
 		const settingRow = await this.get(c, true);
 		const authInfo = await this.getRequestAuthInfo(c);
 		const domainList = await this.filterDomainListByAuth(c, settingRow.domainList, authInfo);
+		const visibleDomainList = settingRow.loginDomain === 1 && !authInfo ? [] : domainList;
+		const loginRegisterDomainList = this.resolveLoginRegisterDomainList(settingRow, visibleDomainList);
 
 		return {
 			register: settingRow.register,
@@ -247,7 +259,10 @@ const settingService = {
 			background: settingRow.background,
 			loginOpacity: settingRow.loginOpacity,
 			loginDarkenFactor: settingRow.loginDarkenFactor,
-			domainList: settingRow.loginDomain === 1 && !authInfo ? [] : domainList,
+			domainList: visibleDomainList,
+			authDomainSource: settingRow.authDomainSource,
+			authDomainList: this.normalizeAuthDomainList(settingRow.authDomainList, visibleDomainList).join(','),
+			loginRegisterDomainList,
 			regKey: settingRow.regKey,
 			regVerifyOpen: settingRow.regVerifyOpen,
 			addVerifyOpen: settingRow.addVerifyOpen,
@@ -280,6 +295,39 @@ const settingService = {
 			.filter(item => allowed.includes(item));
 		const selected = Array.from(new Set(parts));
 		return selected.length ? selected.join(',') : 'letters,numbers';
+	},
+
+	normalizeAuthDomainSource(value) {
+		return value === 'custom' ? 'custom' : 'cloudflare';
+	},
+
+	normalizeAuthDomainList(value, domainList = []) {
+		const allowed = new Set((Array.isArray(domainList) ? domainList : [])
+			.map(domain => this.normalizeDomain(domain))
+			.filter(Boolean));
+		const rawList = Array.isArray(value) ? value : String(value || '').split(',');
+		const selected = rawList
+			.map(domain => this.normalizeDomain(domain))
+			.filter(domain => domain && allowed.has(domain));
+		return Array.from(new Set(selected));
+	},
+
+	normalizeDomain(domain) {
+		const value = String(domain || '').trim().toLowerCase().replace(/^@/, '');
+		if (!value) return '';
+		return `@${value}`;
+	},
+
+	resolveLoginRegisterDomainList(settingRow, domainList) {
+		const normalizedDomainList = (Array.isArray(domainList) ? domainList : [])
+			.map(domain => this.normalizeDomain(domain))
+			.filter(Boolean);
+		if (this.normalizeAuthDomainSource(settingRow.authDomainSource) !== 'custom') {
+			return normalizedDomainList;
+		}
+
+		const customDomainList = this.normalizeAuthDomainList(settingRow.authDomainList, normalizedDomainList);
+		return customDomainList.length ? customDomainList : normalizedDomainList;
 	},
 
 	async getRequestAuthInfo(c) {
