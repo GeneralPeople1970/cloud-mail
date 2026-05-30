@@ -63,6 +63,8 @@ const en = {
 	noDomainPermRegKey: "Registration code not valid for this domain",
 	noDomainPermSend: "No permission to send from this domain email",
 	publicTokenFail: 'Token validation failed',
+	shareLinkInvalid: 'Share link does not exist or has expired',
+	shareExpireInvalid: 'Invalid expiration time',
 	notAdmin: 'The entered email is not an administrator email',
 	emailExistDatabase: 'Email already exists in the database',
 	notConfigOss: 'Object storage not configured',

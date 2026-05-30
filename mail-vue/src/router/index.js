@@ -62,6 +62,16 @@ const routes = [
                 }
             },
             {
+                path: '/shared-email',
+                name: 'shared-email',
+                component: () => import('@/views/shared-email/index.vue'),
+                meta: {
+                    title: 'sharedEmail',
+                    name: 'shared-email',
+                    menu: true
+                }
+            },
+            {
                 path: '/debug',
                 name: 'debug',
                 component: () => import('@/views/debug/index.vue'),
@@ -78,6 +88,11 @@ const routes = [
         path: '/login',
         name: 'login',
         component: () => import('@/views/login/index.vue')
+    },
+    {
+        path: '/share/:token',
+        name: 'share',
+        component: () => import('@/views/share/index.vue')
     },
     {
         path: '/test',
@@ -120,7 +135,7 @@ router.beforeEach((to, from, next) => {
 
     const token = localStorage.getItem('token')
 
-    if (!token && to.name !== 'login') {
+    if (!token && !['login', 'share'].includes(to.name)) {
         return next({name: 'login'})
     }
 

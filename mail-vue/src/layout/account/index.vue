@@ -9,6 +9,7 @@
         <el-card class="item" :class="itemBg(item.accountId)" v-for="(item, index) in accounts" :key="item.accountId"
                  @click="changeAccount(item)">
           <div class="account">
+            <Icon v-if="isShared(item)" class="shared-icon" icon="fluent:share-24-regular" width="16" height="16"/>
             {{ item.email }}
           </div>
           <div class="opt">
@@ -18,12 +19,11 @@
             </div>
             <div class="settings" @click.stop>
               <Icon icon="fluent-color:clipboard-24" width="22" height="22" @click.stop="copyAccount(item.email)"/>
-              <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"
-                    v-if="showNullSetting(item)"/>
-              <el-dropdown v-else>
+              <el-dropdown>
                 <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"/>
                 <template #dropdown>
                   <el-dropdown-menu>
+                    <el-dropdown-item @click="openShare(item)">{{ $t('shareEmailLink') }}</el-dropdown-item>
                     <el-dropdown-item v-if="hasPerm('email:send')" @click="openSetName(item)">{{ $t('rename') }}</el-dropdown-item>
                     <el-dropdown-item v-if="item.accountId !== userStore.user.account.accountId" @click="setAsTop(item, index)">{{ $t('pin') }}</el-dropdown-item>
                     <el-dropdown-item v-if="item.accountId !== userStore.user.account.accountId && hasPerm('account:delete')"
@@ -123,6 +123,7 @@
         </el-button>
       </div>
     </el-dialog>
+    <email-share-dialog v-model="shareShow" :account="shareAccount" @changed="refreshShareStatus" />
   </div>
 </template>
 <script setup>
@@ -136,6 +137,7 @@ import {
   accountSetAllReceive,
   accountSetAsTop
 } from "@/request/account.js";
+import {emailShareAccountStatusMap} from "@/request/email-share.js";
 import {sleep} from "@/utils/time-utils.js"
 import {isEmail} from "@/utils/verify-utils.js";
 import {useSettingStore} from "@/store/setting.js";
@@ -145,6 +147,7 @@ import {useUserStore} from "@/store/user.js";
 import {hasPerm} from "@/perm/perm.js"
 import {useI18n} from "vue-i18n";
 import {AccountAllReceiveEnum} from "@/enums/account-enum.js";
+import EmailShareDialog from "@/components/email-share-dialog/index.vue";
 
 const {t} = useI18n();
 const userStore = useUserStore();
@@ -155,6 +158,7 @@ const showAdd = ref(false)
 const addLoading = ref(false);
 const domainList = computed(() => settingStore.domainList)
 const accounts = reactive([])
+const shareStatusMap = ref({})
 const noLoading = ref(false)
 const loading = ref(false)
 const followLoading = ref(false);
@@ -162,6 +166,8 @@ const verifyShow = ref(false)
 const setNameShow = ref(false)
 const setNameLoading = ref(false)
 const accountName = ref(null)
+const shareShow = ref(false)
+const shareAccount = ref(null)
 const addRef = ref({})
 const scrollbarRef = ref({})
 let account = null
@@ -183,6 +189,7 @@ const mySelect = ref()
 
 if (hasPerm('account:query')) {
   getAccountList()
+  refreshShareStatus()
 }
 
 watch(() => accountStore.changeUserAccountName, () => {
@@ -292,12 +299,26 @@ function setAllReceive(account) {
 }
 
 
-function showNullSetting(item) {
-  return !hasPerm('email:send') && !(item.accountId !== userStore.user.account.accountId && hasPerm('account:delete'))
+function itemBg(accountId) {
+  return [
+    accountStore.currentAccountId === accountId ? 'item-choose' : '',
+    shareStatusMap.value[accountId] ? 'item-shared' : ''
+  ]
 }
 
-function itemBg(accountId) {
-  return accountStore.currentAccountId === accountId ? 'item-choose' : ''
+function isShared(account) {
+  return Boolean(shareStatusMap.value[account.accountId] || shareStatusMap.value[account.email])
+}
+
+function refreshShareStatus() {
+  emailShareAccountStatusMap().then(map => {
+    shareStatusMap.value = map || {}
+  })
+}
+
+function openShare(accountItem) {
+  shareAccount.value = accountItem
+  shareShow.value = true
 }
 
 
@@ -334,7 +355,8 @@ function refresh() {
   queryParams.lastSort = null
   getSkeletonRows();
   scrollbarRef.value.setScrollTop(0)
-  accounts.splice(0, accounts.length)
+    accounts.splice(0, accounts.length)
+  refreshShareStatus()
   getAccountList()
 }
 
@@ -414,6 +436,7 @@ function getAccountList() {
     }
 
     accounts.push(...list)
+    refreshShareStatus()
 
     loading.value = false
     followLoading.value = false
@@ -592,6 +615,9 @@ path[fill="#ffdda1"] {
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .opt {
@@ -623,6 +649,16 @@ path[fill="#ffdda1"] {
 
   .item-choose {
     background: var(--choose-account-background);
+  }
+
+  .item-shared {
+    border-color: #47c58a;
+    box-shadow: 0 0 0 1px rgba(71, 197, 138, 0.28);
+  }
+
+  .shared-icon {
+    color: #1f9d66;
+    flex: 0 0 auto;
   }
 }
 

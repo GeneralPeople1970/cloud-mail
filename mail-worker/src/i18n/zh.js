@@ -63,6 +63,8 @@ const zh = {
 	noDomainPermRegKey: '你的注册码没有权限注册该域名邮箱',
 	noDomainPermSend: '你没有权限使用该域名邮箱发送邮件',
 	publicTokenFail: 'token验证失败',
+	shareLinkInvalid: '共享链接不存在或已失效',
+	shareExpireInvalid: '过期时间无效',
 	notAdmin: '输入的邮箱不是管理员邮箱',
 	emailExistDatabase: '有邮箱已存在数据库中',
 	notConfigOss: '对象存储未配置',

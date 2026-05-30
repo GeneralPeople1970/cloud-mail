@@ -56,6 +56,7 @@
               v-if="params.timeSort === 0" width="28" height="28"/>
         <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-up-outline" v-else
               width="28" height="28"/>
+        <Icon class="icon" icon="fluent:share-24-regular" width="21" height="21" @click="openBatchShare"/>
         <Icon class="icon clear" icon="fluent:broom-sparkle-16-regular" width="22" height="22" @click="openBathDelete"/>
       </template>
     </emailScroll>
@@ -84,6 +85,11 @@
         </div>
       </div>
     </el-dialog>
+    <email-share-dialog
+        v-model="shareShow"
+        :batch-addresses="shareAddresses"
+        admin
+    />
   </div>
 </template>
 
@@ -105,6 +111,7 @@ import {toUtc} from "@/utils/day.js";
 import {sleep} from "@/utils/time-utils.js";
 import {useSettingStore} from "@/store/setting.js";
 import { useRoute } from 'vue-router'
+import EmailShareDialog from "@/components/email-share-dialog/index.vue";
 
 defineOptions({
   name: 'all-email'
@@ -120,6 +127,8 @@ const searchValue = ref('')
 const mySelect = ref()
 const showBathDelete = ref(false)
 const clearLoading = ref(false)
+const shareShow = ref(false)
+const shareAddresses = ref([])
 
 onMounted(() => {
   latest();
@@ -189,6 +198,26 @@ watch(() => params, () => {
 
 function openBathDelete() {
   showBathDelete.value = true
+}
+
+function openBatchShare() {
+  const selected = sysEmailScroll.value.getSelectedMails?.() || []
+  const addresses = Array.from(new Set(selected
+      .map(email => email.type === 1 ? email.sendEmail : email.toEmail)
+      .map(address => String(address || '').trim().toLowerCase())
+      .filter(Boolean)))
+
+  if (!addresses.length) {
+    ElMessage({
+      message: t('selectEmailToShare'),
+      type: 'warning',
+      plain: true
+    })
+    return
+  }
+
+  shareAddresses.value = addresses
+  shareShow.value = true
 }
 
 function batchDelete() {

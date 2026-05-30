@@ -31,8 +31,133 @@ const dbInit = {
 		await this.v3_0DB(c);
 		await this.v3_1DB(c);
 		await this.v3_2DB(c);
+		await this.v3_3DB(c);
+		await this.v3_4DB(c);
 		await settingService.refresh(c);
 		return c.text('success');
+	},
+
+	async v3_4DB(c) {
+		try {
+			await this.ensureEmailShareLinkSchema(c);
+			await this.addColumnIfMissing(c, 'email_share_link', 'share_address', `ALTER TABLE email_share_link ADD COLUMN share_address TEXT NOT NULL DEFAULT '';`);
+			await this.addColumnIfMissing(c, 'email_share_link', 'source_type', `ALTER TABLE email_share_link ADD COLUMN source_type TEXT NOT NULL DEFAULT 'account';`);
+			await this.addColumnIfMissing(c, 'email_share_link', 'open_count', `ALTER TABLE email_share_link ADD COLUMN open_count INTEGER NOT NULL DEFAULT 0;`);
+			await c.env.db.prepare(`UPDATE email_share_link SET share_address = account_email WHERE share_address = '';`).run();
+			await c.env.db.prepare(`
+				CREATE TABLE IF NOT EXISTS email_share_visit (
+					visit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+					share_link_id INTEGER NOT NULL,
+					ip TEXT NOT NULL,
+					last_count_time DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`).run();
+			await c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_share_visit_link_ip ON email_share_visit(share_link_id, ip);`).run();
+			await c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_share_owner ON email_share_link(owner_user_id, status);`).run();
+			await c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_share_address ON email_share_link(share_address, link_type);`).run();
+		} catch (e) {
+			console.warn(`skip email share v3_4 init: ${e.message}`);
+		}
+	},
+
+	async ensureEmailShareLinkSchema(c) {
+		const accountIdColumn = await c.env.db.prepare(`SELECT * FROM pragma_table_info('email_share_link') WHERE name = 'account_id' LIMIT 1`).first();
+		if (!accountIdColumn || Number(accountIdColumn.notnull) !== 1) {
+			return;
+		}
+
+		const columns = await c.env.db.prepare(`SELECT name FROM pragma_table_info('email_share_link')`).all();
+		const columnNames = new Set((columns.results || []).map(row => row.name));
+		const col = (name, fallback) => columnNames.has(name) ? name : fallback;
+
+		await c.env.db.prepare(`DROP INDEX IF EXISTS idx_email_share_account_type`).run();
+		await c.env.db.prepare(`DROP INDEX IF EXISTS idx_email_share_token_hash`).run();
+		await c.env.db.prepare(`DROP INDEX IF EXISTS idx_email_share_owner`).run();
+		await c.env.db.prepare(`DROP INDEX IF EXISTS idx_email_share_address`).run();
+		await c.env.db.prepare(`DROP TABLE IF EXISTS email_share_link_v3_4_old`).run();
+		await c.env.db.prepare(`ALTER TABLE email_share_link RENAME TO email_share_link_v3_4_old`).run();
+		await c.env.db.prepare(`
+			CREATE TABLE email_share_link (
+				share_link_id INTEGER PRIMARY KEY AUTOINCREMENT,
+				account_id INTEGER,
+				account_email TEXT NOT NULL,
+				share_address TEXT NOT NULL DEFAULT '',
+				owner_user_id INTEGER NOT NULL,
+				created_by_user_id INTEGER NOT NULL,
+				link_type TEXT NOT NULL,
+				source_type TEXT NOT NULL DEFAULT 'account',
+				token_hash TEXT NOT NULL,
+				expire_time DATETIME,
+				status INTEGER NOT NULL DEFAULT 0,
+				open_count INTEGER NOT NULL DEFAULT 0,
+				create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+				update_time DATETIME DEFAULT CURRENT_TIMESTAMP
+			)
+		`).run();
+		await c.env.db.prepare(`
+			INSERT INTO email_share_link (
+				share_link_id,
+				account_id,
+				account_email,
+				share_address,
+				owner_user_id,
+				created_by_user_id,
+				link_type,
+				source_type,
+				token_hash,
+				expire_time,
+				status,
+				open_count,
+				create_time,
+				update_time
+			)
+			SELECT
+				share_link_id,
+				account_id,
+				account_email,
+				${col('share_address', 'account_email')},
+				owner_user_id,
+				created_by_user_id,
+				link_type,
+				${col('source_type', `'account'`)},
+				token_hash,
+				expire_time,
+				status,
+				${col('open_count', '0')},
+				create_time,
+				update_time
+			FROM email_share_link_v3_4_old
+		`).run();
+		await c.env.db.prepare(`DROP TABLE email_share_link_v3_4_old`).run();
+		await c.env.db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_email_share_account_type ON email_share_link(account_id, link_type);`).run();
+		await c.env.db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_email_share_token_hash ON email_share_link(token_hash);`).run();
+	},
+
+	async v3_3DB(c) {
+		try {
+			await c.env.db.prepare(`
+				CREATE TABLE IF NOT EXISTS email_share_link (
+					share_link_id INTEGER PRIMARY KEY AUTOINCREMENT,
+					account_id INTEGER,
+					account_email TEXT NOT NULL,
+					share_address TEXT NOT NULL DEFAULT '',
+					owner_user_id INTEGER NOT NULL,
+					created_by_user_id INTEGER NOT NULL,
+					link_type TEXT NOT NULL,
+					source_type TEXT NOT NULL DEFAULT 'account',
+					token_hash TEXT NOT NULL,
+					expire_time DATETIME,
+					status INTEGER NOT NULL DEFAULT 0,
+					open_count INTEGER NOT NULL DEFAULT 0,
+					create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+					update_time DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`).run();
+			await c.env.db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_email_share_account_type ON email_share_link(account_id, link_type);`).run();
+			await c.env.db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_email_share_token_hash ON email_share_link(token_hash);`).run();
+		} catch (e) {
+			console.warn(`skip email_share_link init: ${e.message}`);
+		}
 	},
 
 	async v3_2DB(c) {

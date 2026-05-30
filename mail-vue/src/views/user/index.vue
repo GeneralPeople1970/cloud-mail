@@ -206,6 +206,7 @@
               <el-button type="primary" size="small">{{t('action')}}</el-button>
               <template #dropdown>
                 <el-dropdown-menu>
+                  <el-dropdown-item @click="openAdminShare(props.row)">{{ $t('shareEmailLink') }}</el-dropdown-item>
                   <el-dropdown-item @click="deleteAccount(props.row)">{{ $t('delete') }}</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -225,6 +226,7 @@
         />
       </div>
     </el-dialog>
+    <email-share-dialog v-model="shareShow" :account="shareAccount" admin />
     <el-dialog class="account-dialog" v-model="detailsShow" :title="t('userDetails')"  >
       <div class="details">
         <div v-if="userDetails.username"><span class="details-item-title">LinuxDo:</span>
@@ -387,6 +389,7 @@ import {isEmail} from "@/utils/verify-utils.js";
 import {useRoleStore} from "@/store/role.js";
 import {useUserStore} from "@/store/user.js";
 import {useI18n} from 'vue-i18n';
+import EmailShareDialog from "@/components/email-share-dialog/index.vue";
 
 defineOptions({
   name: 'user'
@@ -419,6 +422,8 @@ const total = ref(0)
 const first = ref(true)
 const scrollbarRef = ref(null)
 const accountLoading = ref(false)
+const shareShow = ref(false)
+const shareAccount = ref(null)
 const dropdownRef = ref(null);
 const dropdownShow = ref(false);
 const rightClickUser = ref({});
@@ -567,6 +572,12 @@ function deleteAccount(account) {
     })
   });
 }
+
+function openAdminShare(account) {
+  shareAccount.value = account
+  shareShow.value = true
+}
+
 function accountCurChange(e) {
   accountParams.num = e
   getAccountList()

@@ -47,6 +47,7 @@
             />
           </el-select>
           <Icon class="icon toolbar-icon" icon="iconoir:copy" width="20" height="20" @click="copyAddress"/>
+          <Icon class="icon toolbar-icon" icon="fluent:share-24-regular" width="20" height="20" @click="openShare"/>
           <Icon class="icon toolbar-icon random-icon" icon="iconoir:shuffle" width="20" height="20" @click="generateRandom"/>
           <Icon class="icon toolbar-icon" icon="iconoir:search" width="20" height="20" @click="search"/>
           <Icon class="icon toolbar-icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-down-outline"
@@ -65,6 +66,7 @@
         {{ email.subject || $t('noSubject') }}
       </template>
     </emailScroll>
+    <email-share-dialog v-model="shareShow" :address="currentAddress" />
   </div>
 </template>
 
@@ -80,6 +82,7 @@ import {useEmailStore} from "@/store/email.js";
 import {useSettingStore} from "@/store/setting.js";
 import {sleep} from "@/utils/time-utils.js";
 import {isEmail} from "@/utils/verify-utils.js";
+import EmailShareDialog from "@/components/email-share-dialog/index.vue";
 
 defineOptions({
   name: 'random-email'
@@ -94,6 +97,7 @@ const randomLocal = ref('')
 const domainPrefix = ref('')
 const baseDomain = ref('')
 const activeAddress = ref('')
+const shareShow = ref(false)
 
 const params = reactive({
   timeSort: 0
@@ -332,6 +336,18 @@ function search() {
 
   activeAddress.value = currentAddress.value
   randomEmailScroll.value.refreshList()
+}
+
+function openShare() {
+  if (!currentAddress.value || !isEmail(currentAddress.value) || !isAllowedAddress(currentAddress.value)) {
+    ElMessage({
+      message: t('notEmailMsg'),
+      type: 'error',
+      plain: true
+    })
+    return
+  }
+  shareShow.value = true
 }
 
 function changeTimeSort() {

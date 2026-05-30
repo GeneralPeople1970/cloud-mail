@@ -358,6 +358,7 @@ defineExpose({
   deleteEmail,
   addItem,
   handleList,
+  getSelectedMails,
   emailList,
   firstLoad,
   latestEmail,
@@ -787,6 +788,10 @@ function handleCheckAllChange(val) {
 // 获取选中的邮件列表id
 function getSelectedMailsIds() {
   return emailList.filter(item => item.checked).map(item => item.emailId);
+}
+
+function getSelectedMails() {
+  return emailList.filter(item => item.checked);
 }
 
 function getSelectedDraftsIds() {
