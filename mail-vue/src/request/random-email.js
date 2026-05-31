@@ -7,3 +7,11 @@ export function randomEmailList(params) {
 export function randomEmailLatest(address, emailId) {
     return http.get('/randomEmail/latest', {params: {address, emailId}, noMsg: true, timeout: 35 * 1000})
 }
+
+export function randomEmailQuota() {
+    return http.get('/randomEmail/quota')
+}
+
+export function randomEmailGenerate(params) {
+    return http.post('/randomEmail/generate', params)
+}

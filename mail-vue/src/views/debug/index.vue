@@ -9,6 +9,7 @@
         <el-button :loading="loading" type="primary" @click="runDiagnostics">{{ $t('debugRunDiagnostics') }}</el-button>
         <el-button @click="copyReport">{{ $t('debugCopyReport') }}</el-button>
         <el-button @click="clearErrors">{{ $t('debugClearErrors') }}</el-button>
+        <el-button type="warning" @click="clearSiteCache">{{ $t('debugClearSiteCache') }}</el-button>
       </div>
     </div>
 
@@ -289,6 +290,43 @@ async function copyReport() {
 function clearErrors() {
   clearDebugErrors();
   frontendErrors.value = [];
+}
+
+async function clearSiteCache() {
+  try {
+    await ElMessageBox.confirm(t('debugClearSiteCacheConfirm'), {
+      confirmButtonText: t('confirm'),
+      cancelButtonText: t('cancel'),
+      type: 'warning'
+    });
+  } catch (e) {
+    return;
+  }
+
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(registration => registration.unregister()));
+  }
+
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(key => caches.delete(key)));
+  }
+
+  if (indexedDB.databases) {
+    const databases = await indexedDB.databases();
+    await Promise.all(databases
+        .map(database => database.name)
+        .filter(Boolean)
+        .map(name => new Promise(resolve => {
+          const request = indexedDB.deleteDatabase(name);
+          request.onsuccess = request.onerror = request.onblocked = resolve;
+        })));
+  }
+
+  localStorage.clear();
+  sessionStorage.clear();
+  window.location.replace('/login');
 }
 </script>
 

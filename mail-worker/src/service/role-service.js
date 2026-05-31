@@ -16,6 +16,7 @@ const roleService = {
 	async add(c, params, userId) {
 
 		let { name, permIds, banEmail, availDomain } = params;
+		params.randomEmailCount = this.normalizeLimit(params.randomEmailCount);
 
 		if (!name) {
 			throw new BizError(t('emptyRoleName'));
@@ -65,6 +66,7 @@ const roleService = {
 	async setRole(c, params) {
 
 		let { name, permIds, roleId, banEmail, availDomain } = params;
+		params.randomEmailCount = this.normalizeLimit(params.randomEmailCount);
 
 		if (!name) {
 			throw new BizError(t('emptyRoleName'));
@@ -217,6 +219,14 @@ const roleService = {
 		}
 
 		return false;
+	},
+
+	normalizeLimit(value) {
+		const count = Number(value);
+		if (!count || Number.isNaN(count) || count < 0) {
+			return 0;
+		}
+		return Math.min(99999, Math.floor(count));
 	}
 };
 

@@ -65,6 +65,7 @@ const en = {
 	publicTokenFail: 'Token validation failed',
 	shareLinkInvalid: 'Share link does not exist or has expired',
 	shareExpireInvalid: 'Invalid expiration time',
+	randomEmailQuotaExceeded: 'Random email quota has been used up',
 	notAdmin: 'The entered email is not an administrator email',
 	emailExistDatabase: 'Email already exists in the database',
 	notConfigOss: 'Object storage not configured',

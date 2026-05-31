@@ -6,7 +6,17 @@
     </div>
     <el-scrollbar class="scrollbar" ref="scrollbarRef">
       <div v-infinite-scroll="getAccountList" :infinite-scroll-distance="600" :infinite-scroll-immediate="false">
-        <el-card class="item" :class="itemBg(item.accountId)" v-for="(item, index) in accounts" :key="item.accountId"
+        <el-card class="item all-mailbox-item" :class="itemBg(allMailboxAccount)" v-if="accounts.length > 0"
+                 @click="changeAccount(allMailboxAccount)">
+          <div class="account">
+            <Icon icon="flat-color-icons:folder" width="18" height="18"/>
+            {{ allMailboxTitle }}
+          </div>
+          <div class="opt">
+            <Icon icon="mdi:email-multiple-outline" width="22" height="22"/>
+          </div>
+        </el-card>
+        <el-card class="item" :class="itemBg(item)" v-for="(item, index) in accounts" :key="item.accountId"
                  @click="changeAccount(item)">
           <div class="account">
             <Icon v-if="isShared(item)" class="shared-icon" icon="fluent:share-24-regular" width="16" height="16"/>
@@ -129,6 +139,7 @@
 <script setup>
 import {Icon} from "@iconify/vue";
 import {computed, nextTick, reactive, ref, watch} from "vue";
+import {useRoute} from "vue-router";
 import {
   accountList,
   accountAdd,
@@ -150,6 +161,7 @@ import {AccountAllReceiveEnum} from "@/enums/account-enum.js";
 import EmailShareDialog from "@/components/email-share-dialog/index.vue";
 
 const {t} = useI18n();
+const route = useRoute();
 const userStore = useUserStore();
 const accountStore = useAccountStore();
 const settingStore = useSettingStore();
@@ -299,10 +311,21 @@ function setAllReceive(account) {
 }
 
 
-function itemBg(accountId) {
+const allMailboxAccount = computed(() => ({
+  accountId: -1,
+  email: allMailboxTitle.value,
+  name: allMailboxTitle.value,
+  allReceive: AccountAllReceiveEnum.ENABLED,
+  isAllMailbox: true
+}))
+
+const allMailboxTitle = computed(() => route.name === 'send' ? t('allSentMailboxes') : t('allReceivedMailboxes'))
+
+function itemBg(accountItem) {
   return [
-    accountStore.currentAccountId === accountId ? 'item-choose' : '',
-    shareStatusMap.value[accountId] ? 'item-shared' : ''
+    accountStore.currentAccountId === accountItem.accountId
+    && Number(accountStore.currentAccount?.allReceive || 0) === Number(accountItem.allReceive || 0) ? 'item-choose' : '',
+    !accountItem.isAllMailbox && shareStatusMap.value[accountItem.accountId] ? 'item-shared' : ''
   ]
 }
 
@@ -432,7 +455,7 @@ function getAccountList() {
       noLoading.value = true
     }
     if (accounts.length === 0) {
-      accountStore.currentAccount = list[0]
+      changeAccount(allMailboxAccount.value)
     }
 
     accounts.push(...list)

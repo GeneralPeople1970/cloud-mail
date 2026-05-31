@@ -46,7 +46,7 @@ onMounted(() => {
   emailStore.sendScroll = sendScroll;
 })
 
-watch(() => accountStore.currentAccountId, () => {
+watch(() => `${accountStore.currentAccountId}-${Number(accountStore.currentAccount?.allReceive || 0)}`, () => {
   sendScroll.value.refreshList();
 })
 

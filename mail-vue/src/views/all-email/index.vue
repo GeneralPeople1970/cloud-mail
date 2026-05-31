@@ -15,6 +15,7 @@
                  @jump="jumpContent"
                  @refresh-before="refreshBefore"
                  @right-search="rightSearch"
+                 @selection-change="selectionChange"
                  :type="'all-email'"
 
     >
@@ -56,7 +57,7 @@
               v-if="params.timeSort === 0" width="28" height="28"/>
         <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-up-outline" v-else
               width="28" height="28"/>
-        <Icon class="icon" icon="fluent:share-24-regular" width="21" height="21" @click="openBatchShare"/>
+        <Icon class="icon share" v-if="selectedEmailCount > 0" icon="fluent:share-24-regular" width="21" height="21" @click="openBatchShare"/>
         <Icon class="icon clear" icon="fluent:broom-sparkle-16-regular" width="22" height="22" @click="openBathDelete"/>
       </template>
     </emailScroll>
@@ -129,6 +130,7 @@ const showBathDelete = ref(false)
 const clearLoading = ref(false)
 const shareShow = ref(false)
 const shareAddresses = ref([])
+const selectedEmailCount = ref(0)
 
 onMounted(() => {
   latest();
@@ -218,6 +220,10 @@ function openBatchShare() {
 
   shareAddresses.value = addresses
   shareShow.value = true
+}
+
+function selectionChange(rows) {
+  selectedEmailCount.value = rows.length
 }
 
 function batchDelete() {
@@ -512,7 +518,7 @@ async function latest() {
   @media (max-width: 419px) {
     position: absolute;
     top: 41px;
-    left: 242px;
+    left: 276px;
   }
 }
 
@@ -520,7 +526,15 @@ async function latest() {
   @media (max-width: 419px) {
     position: absolute;
     top: 42px;
-    left: 208px;
+    left: 204px;
+  }
+}
+
+.share {
+  @media (max-width: 419px) {
+    position: absolute;
+    top: 42px;
+    left: 240px;
   }
 }
 
@@ -528,13 +542,13 @@ async function latest() {
   @media (max-width: 456px) {
     position: absolute;
     top: 43px;
-    left: 294px;
+    left: 312px;
   }
 
   @media (max-width: 419px) {
     position: absolute;
     top: 43px;
-    left: 282px;
+    left: 312px;
   }
 }
 </style>

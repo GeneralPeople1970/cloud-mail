@@ -43,6 +43,7 @@ const dbInit = {
 			await this.addColumnIfMissing(c, 'email_share_link', 'share_address', `ALTER TABLE email_share_link ADD COLUMN share_address TEXT NOT NULL DEFAULT '';`);
 			await this.addColumnIfMissing(c, 'email_share_link', 'source_type', `ALTER TABLE email_share_link ADD COLUMN source_type TEXT NOT NULL DEFAULT 'account';`);
 			await this.addColumnIfMissing(c, 'email_share_link', 'open_count', `ALTER TABLE email_share_link ADD COLUMN open_count INTEGER NOT NULL DEFAULT 0;`);
+			await this.addColumnIfMissing(c, 'role', 'random_email_count', `ALTER TABLE role ADD COLUMN random_email_count INTEGER NOT NULL DEFAULT 0;`);
 			await c.env.db.prepare(`UPDATE email_share_link SET share_address = account_email WHERE share_address = '';`).run();
 			await c.env.db.prepare(`
 				CREATE TABLE IF NOT EXISTS email_share_visit (
@@ -55,6 +56,16 @@ const dbInit = {
 			await c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_share_visit_link_ip ON email_share_visit(share_link_id, ip);`).run();
 			await c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_share_owner ON email_share_link(owner_user_id, status);`).run();
 			await c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_share_address ON email_share_link(share_address, link_type);`).run();
+			await c.env.db.prepare(`
+				CREATE TABLE IF NOT EXISTS random_email_record (
+					record_id INTEGER PRIMARY KEY AUTOINCREMENT,
+					user_id INTEGER NOT NULL,
+					address TEXT NOT NULL,
+					create_time DATETIME DEFAULT CURRENT_TIMESTAMP
+				)
+			`).run();
+			await c.env.db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_random_email_record_user_address ON random_email_record(user_id, address);`).run();
+			await c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_random_email_record_user ON random_email_record(user_id);`).run();
 		} catch (e) {
 			console.warn(`skip email share v3_4 init: ${e.message}`);
 		}

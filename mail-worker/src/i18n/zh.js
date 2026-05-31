@@ -65,6 +65,7 @@ const zh = {
 	publicTokenFail: 'token验证失败',
 	shareLinkInvalid: '共享链接不存在或已失效',
 	shareExpireInvalid: '过期时间无效',
+	randomEmailQuotaExceeded: '随机邮箱数量已用完',
 	notAdmin: '输入的邮箱不是管理员邮箱',
 	emailExistDatabase: '有邮箱已存在数据库中',
 	notConfigOss: '对象存储未配置',

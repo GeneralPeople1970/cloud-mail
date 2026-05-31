@@ -8,10 +8,70 @@ import settingService from './setting-service';
 import accountService from './account-service';
 import emailService from './email-service';
 import roleService from './role-service';
+import randomEmailRecord from '../entity/random-email-record';
 import BizError from '../error/biz-error';
 import { t } from '../i18n/i18n';
 
 const randomEmailService = {
+
+	async quota(c, userId) {
+		const quota = await this.quotaInfo(c, userId);
+		return this.formatQuota(quota);
+	},
+
+	async generate(c, params, userId) {
+		const settings = await settingService.query(c);
+		const domainList = await this.userDomainList(c, settings.domainList?.length ? settings.domainList : c.env.domain);
+		const subdomains = this.normalizeSubdomains(settings.randomEmailSubdomains);
+		const baseDomain = this.normalizeBaseDomain(params.baseDomain, domainList);
+		const domainPrefix = this.normalizeDomainPrefix(params.domainPrefix, subdomains);
+		const domain = domainPrefix ? `${domainPrefix}.${baseDomain}` : baseDomain;
+
+		if (!this.isAllowedDomain(domain, domainList, subdomains)) {
+			throw new BizError(t('notEmailDomain'));
+		}
+
+		const quota = await this.quotaInfo(c, userId);
+		if (quota.limit > 0 && quota.used >= quota.limit) {
+			throw new BizError(t('randomEmailQuotaExceeded'), 403);
+		}
+
+		let address = '';
+		let available = false;
+		for (let i = 0; i < 8; i++) {
+			const localPart = this.randomText(settings.randomEmailMode, settings.randomEmailLength);
+			address = `${localPart}@${domain}`.toLowerCase();
+			if (!verifyUtils.isEmail(address)) {
+				continue;
+			}
+
+			const exists = await orm(c).select().from(randomEmailRecord)
+				.where(and(
+					eq(randomEmailRecord.userId, userId),
+					sql`${randomEmailRecord.address} COLLATE NOCASE = ${address}`,
+				))
+				.get();
+			if (!exists) {
+				available = true;
+				break;
+			}
+		}
+
+		if (!available || !address || !verifyUtils.isEmail(address)) {
+			throw new BizError(t('notEmail'));
+		}
+
+		await orm(c).insert(randomEmailRecord).values({
+			userId,
+			address,
+		}).run();
+
+		const nextQuota = await this.quotaInfo(c, userId);
+		return {
+			address,
+			...this.formatQuota(nextQuota),
+		};
+	},
 
 	async list(c, params) {
 		const { address, emailId, size, timeSort } = await this.normalizeParams(c, params);
@@ -188,6 +248,94 @@ const randomEmailService = {
 		}
 
 		return false;
+	},
+
+	async quotaInfo(c, userId) {
+		const userRow = c.get?.('user');
+		const usedRow = await orm(c).select({ total: count() }).from(randomEmailRecord)
+			.where(eq(randomEmailRecord.userId, userId))
+			.get();
+
+		if (!userRow || userRow.email === c.env.admin) {
+			return { limit: 0, used: usedRow.total || 0 };
+		}
+
+		const roleRow = await roleService.selectByUserId(c, userId);
+		const limit = this.normalizeLimit(roleRow?.randomEmailCount);
+		return { limit, used: usedRow.total || 0 };
+	},
+
+	formatQuota(quota) {
+		const remaining = quota.limit > 0 ? Math.max(0, quota.limit - quota.used) : null;
+		return {
+			limit: quota.limit,
+			used: quota.used,
+			remaining,
+			unlimited: quota.limit === 0,
+		};
+	},
+
+	normalizeLimit(value) {
+		const count = Number(value);
+		if (!count || Number.isNaN(count) || count < 0) {
+			return 0;
+		}
+		return Math.floor(count);
+	},
+
+	normalizeBaseDomain(value, domainList) {
+		const baseDomain = String(value || '').trim().toLowerCase().replace(/^@/, '');
+		const allowed = domainList.map(domain => domain.replace(/^@/, ''));
+		if (!baseDomain || !allowed.includes(baseDomain)) {
+			return allowed[0] || '';
+		}
+		return baseDomain;
+	},
+
+	normalizeDomainPrefix(value, subdomains) {
+		const prefix = String(value || '').trim().toLowerCase();
+		if (!prefix) {
+			return '';
+		}
+		return subdomains.includes(prefix) ? prefix : '';
+	},
+
+	normalizeRandomMode(value) {
+		const modes = String(value || '')
+			.split(',')
+			.map(item => item.trim())
+			.filter(item => ['letters', 'numbers', 'symbols'].includes(item));
+		const unique = Array.from(new Set(modes));
+		return unique.length ? unique : ['letters', 'numbers'];
+	},
+
+	normalizeLength(value) {
+		const length = Number(value);
+		if (Number.isNaN(length)) {
+			return 10;
+		}
+		return Math.min(32, Math.max(4, length));
+	},
+
+	randomText(mode, length) {
+		const modes = this.normalizeRandomMode(mode);
+		const charMap = {
+			letters: 'abcdefghijklmnopqrstuvwxyz',
+			numbers: '0123456789',
+			symbols: '._-',
+		};
+		const chars = Array.from(new Set(modes.flatMap(item => charMap[item].split('')))).join('');
+		const size = this.normalizeLength(length);
+		const array = new Uint32Array(size);
+		let value = '';
+
+		crypto.getRandomValues(array);
+
+		for (let i = 0; i < size; i++) {
+			value += chars[array[i] % chars.length];
+		}
+
+		return value.replace(/^[._-]+|[._-]+$/g, 'a');
 	}
 };
 

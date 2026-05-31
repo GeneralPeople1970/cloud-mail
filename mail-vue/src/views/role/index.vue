@@ -96,6 +96,20 @@
           <el-input-number :placeholder="$t('order')" :min="0" :max="9999" v-model.number="form.sort"
                            controls-position="right" autocomplete="off"/>
         </div>
+        <div class="dialog-input limit-field">
+          <div class="limit-label">
+            <span>{{ $t('randomEmailCount') }}</span>
+            <el-tooltip effect="dark" :content="$t('randomEmailCountDesc')">
+              <Icon class="help-icon" icon="fe:warning" width="15" height="15"/>
+            </el-tooltip>
+          </div>
+          <div class="limit-control">
+            <el-input-number v-model="form.randomEmailCount" controls-position="right" :min="0" :max="99999"
+                             :placeholder="$t('randomEmailCount')">
+            </el-input-number>
+            <span class="limit-hint">{{ $t('zeroUnlimited') }}</span>
+          </div>
+        </div>
         <el-radio-group v-model="expand" size="small" @change="expandChange" class="perm-expand">
           <el-radio-button :label="$t('expand')" :value="true"/>
           <el-radio-button :label="$t('collapse')" :value="false"/>
@@ -116,6 +130,9 @@
             <div>
               <span>{{ node.label }}</span>
               <span class="send-num" v-if="data.permKey === 'email:send'" @click.stop>
+                <el-tooltip effect="dark" :content="$t('sendCountDesc')">
+                  <Icon class="help-icon" icon="fe:warning" width="14" height="14"/>
+                </el-tooltip>
                 <el-input-number v-if="form.sendType === 'day' || form.sendType === 'count'" v-model="form.sendCount" controls-position="right" :min="0" :max="99999" size="small"
                                  :placeholder="$t('total')">
                 </el-input-number>
@@ -128,6 +145,9 @@
                   </el-select>
               </span>
               <span class="send-num" v-if="data.permKey === 'account:add'" @click.stop>
+                <el-tooltip effect="dark" :content="$t('accountCountDesc')">
+                  <Icon class="help-icon" icon="fe:warning" width="14" height="14"/>
+                </el-tooltip>
                 <el-input-number v-model="form.accountCount" controls-position="right" :min="0" :max="99999"
                                  size="small" :placeholder="$t('total')">
                 </el-input-number>
@@ -185,6 +205,7 @@ const form = reactive({
   sendType: 'count',
   sendCount: 0,
   accountCount: 0,
+  randomEmailCount: 0,
   sort: 0,
   isDefault: 0,
   availDomain: []
@@ -329,6 +350,7 @@ function resetForm() {
   form.sendType = 'count'
   form.sendCount = 0
   form.accountCount = 0
+  form.randomEmailCount = 0
   form.banEmail = []
   form.availDomain = []
   tree.value.setCheckedKeys([])
@@ -345,6 +367,7 @@ function openRoleSet(role) {
   form.sendType = role.sendType
   form.sendCount = role.sendCount
   form.accountCount = role.accountCount
+  form.randomEmailCount = role.randomEmailCount || 0
   form.banEmail = role.banEmail
   form.availDomain = role.availDomain
   nextTick(() => {
@@ -427,6 +450,9 @@ window.onresize = () => {
 
 .send-num {
   margin-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 
   .el-input-number {
     width: 95px;
@@ -519,6 +545,34 @@ window.onresize = () => {
   .dialog-input {
     margin-bottom: 15px !important;
   }
+}
+
+.limit-hint {
+  margin-left: 10px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.limit-field {
+  display: grid;
+  gap: 8px;
+}
+
+.limit-label,
+.limit-control {
+  display: flex;
+  align-items: center;
+}
+
+.limit-label {
+  gap: 6px;
+  color: var(--el-text-color-regular);
+  font-size: 13px;
+}
+
+.help-icon {
+  color: var(--el-text-color-secondary);
+  cursor: help;
 }
 
 .perm-expand {

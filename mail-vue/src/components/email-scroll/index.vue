@@ -307,7 +307,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['jump', 'refresh-before', 'delete-draft', 'right-search'])
+const emit = defineEmits(['jump', 'refresh-before', 'delete-draft', 'right-search', 'selection-change'])
 const {t} = useI18n()
 const settingStore = useSettingStore()
 const uiStore = useUiStore();
@@ -783,6 +783,7 @@ function addItem(email) {
 function handleCheckAllChange(val) {
   emailList.forEach(item => item.checked = val);
   isIndeterminate.value = false;
+  emitSelectionChange();
 }
 
 // 获取选中的邮件列表id
@@ -803,6 +804,11 @@ function updateCheckStatus() {
   checkedEmailCount.value = checkedCount;
   checkAll.value = checkedCount === emailList.length;
   isIndeterminate.value = checkedCount > 0 && checkedCount < emailList.length;
+  emitSelectionChange();
+}
+
+function emitSelectionChange() {
+  emit('selection-change', getSelectedMails());
 }
 
 function jumpDetails(email) {
@@ -919,6 +925,7 @@ function refresh() {
 function refreshList() {
   checkAll.value = false;
   isIndeterminate.value = false;
+  emitSelectionChange();
   getEmailList(true);
 }
 

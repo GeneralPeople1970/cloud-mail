@@ -48,7 +48,7 @@
           </el-select>
           <Icon class="icon toolbar-icon" icon="iconoir:copy" width="20" height="20" @click="copyAddress"/>
           <Icon class="icon toolbar-icon" icon="fluent:share-24-regular" width="20" height="20" @click="openShare"/>
-          <Icon class="icon toolbar-icon random-icon" icon="iconoir:shuffle" width="20" height="20" @click="generateRandom"/>
+          <Icon class="icon toolbar-icon random-icon" :class="quotaExhausted ? 'disabled-icon' : ''" icon="iconoir:shuffle" width="20" height="20" @click="generateRandom"/>
           <Icon class="icon toolbar-icon" icon="iconoir:search" width="20" height="20" @click="search"/>
           <Icon class="icon toolbar-icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-down-outline"
                 v-if="params.timeSort === 0" width="28" height="28"/>
@@ -56,7 +56,8 @@
                 width="28" height="28"/>
         </div>
         <div class="current-address" v-if="currentAddress">
-          {{ currentAddress }}
+          <span>{{ currentAddress }}</span>
+          <span class="quota-text">{{ quotaText }}</span>
         </div>
       </template>
       <template #name="{ email }">
@@ -77,7 +78,7 @@ import router from "@/router/index.js";
 import {useRoute} from "vue-router";
 import {useI18n} from "vue-i18n";
 import emailScroll from "@/components/email-scroll/index.vue";
-import {randomEmailLatest, randomEmailList} from "@/request/random-email.js";
+import {randomEmailGenerate, randomEmailLatest, randomEmailList, randomEmailQuota} from "@/request/random-email.js";
 import {useEmailStore} from "@/store/email.js";
 import {useSettingStore} from "@/store/setting.js";
 import {sleep} from "@/utils/time-utils.js";
@@ -98,6 +99,12 @@ const domainPrefix = ref('')
 const baseDomain = ref('')
 const activeAddress = ref('')
 const shareShow = ref(false)
+const quota = reactive({
+  limit: 0,
+  used: 0,
+  remaining: null,
+  unlimited: true
+})
 
 const params = reactive({
   timeSort: 0
@@ -138,6 +145,17 @@ const currentAddress = computed(() => {
 
   const domain = domainPrefix.value ? `${domainPrefix.value}.${baseDomain.value}` : baseDomain.value
   return `${randomLocal.value}@${domain}`.toLowerCase()
+})
+
+const quotaExhausted = computed(() => {
+  return !quota.unlimited && quota.remaining <= 0
+})
+
+const quotaText = computed(() => {
+  if (quota.unlimited) {
+    return t('randomEmailRemainingUnlimited')
+  }
+  return t('randomEmailRemaining', {remaining: Math.max(0, quota.remaining || 0), total: quota.limit})
 })
 
 const cache = localStorage.getItem('random-email-params')
@@ -191,15 +209,27 @@ watch(() => ({
   deep: true
 })
 
-if (!randomLocal.value) {
-  generateRandom(false)
-}
-
 ensureActiveAddress()
 
 onMounted(() => {
+  loadQuota().then(() => {
+    if (!randomLocal.value) {
+      generateRandom()
+    }
+  })
   latest()
 })
+
+function applyQuota(data = {}) {
+  quota.limit = Number(data.limit) || 0
+  quota.used = Number(data.used) || 0
+  quota.remaining = data.remaining === null || data.remaining === undefined ? null : Number(data.remaining)
+  quota.unlimited = Boolean(data.unlimited)
+}
+
+function loadQuota() {
+  return randomEmailQuota().then(applyQuota)
+}
 
 function sanitizeLocalPart(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9._-]/g, '')
@@ -236,53 +266,32 @@ function ensureActiveAddress() {
   return activeAddress.value
 }
 
-function randomText() {
-  const modes = normalizeRandomMode(settingStore.settings.randomEmailMode)
-  const length = normalizeLength(settingStore.settings.randomEmailLength)
-  const charMap = {
-    letters: 'abcdefghijklmnopqrstuvwxyz',
-    numbers: '0123456789',
-    symbols: '._-'
-  }
-  const chars = Array.from(new Set(modes.flatMap(mode => charMap[mode].split('')))).join('')
-  let value = ''
-  const array = new Uint32Array(length)
-
-  if (globalThis.crypto?.getRandomValues) {
-    globalThis.crypto.getRandomValues(array)
-  }
-
-  for (let i = 0; i < length; i++) {
-    const index = array[i] ? array[i] % chars.length : Math.floor(Math.random() * chars.length)
-    value += chars[index]
-  }
-
-  return value
+function applyAddress(address) {
+  const [localPart, domain = ''] = String(address || '').toLowerCase().split('@')
+  const matchedBase = baseDomainList.value.find(item => domain === item || domain.endsWith(`.${item}`)) || baseDomain.value
+  randomLocal.value = sanitizeLocalPart(localPart)
+  baseDomain.value = sanitizeBaseDomain(matchedBase)
+  domainPrefix.value = domain === matchedBase ? '' : sanitizeDomainPrefix(domain.slice(0, -matchedBase.length - 1))
 }
 
-function normalizeRandomMode(value) {
-  const modes = String(value || '')
-      .split(',')
-      .map(item => item.trim())
-      .filter(item => ['letters', 'numbers', 'symbols'].includes(item))
-  const unique = Array.from(new Set(modes))
-  return unique.length ? unique : ['letters', 'numbers']
-}
-
-function normalizeLength(value) {
-  const length = Number(value)
-  if (Number.isNaN(length)) {
-    return 10
+function generateRandom() {
+  if (quotaExhausted.value) {
+    ElMessage({
+      message: t('randomEmailQuotaExceeded'),
+      type: 'warning',
+      plain: true
+    })
+    return
   }
-  return Math.min(32, Math.max(4, length))
-}
 
-function generateRandom(refresh = true) {
-  randomLocal.value = randomText()
-
-  if (refresh) {
+  randomEmailGenerate({
+    baseDomain: baseDomain.value,
+    domainPrefix: domainPrefix.value
+  }).then(data => {
+    applyAddress(data.address)
+    applyQuota(data)
     search()
-  }
+  })
 }
 
 async function copyAddress() {
@@ -478,12 +487,22 @@ async function latest() {
 }
 
 .current-address {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   width: 100%;
   padding: 3px 0 0;
   color: var(--el-text-color-regular);
   font-size: 14px;
   line-height: 20px;
   word-break: break-all;
+}
+
+.quota-text {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .icon {
@@ -497,6 +516,12 @@ async function latest() {
   text-shadow: none;
   color: var(--el-text-color-primary);
   opacity: 1;
+}
+
+.disabled-icon {
+  cursor: not-allowed;
+  color: var(--el-text-color-disabled);
+  opacity: 0.45;
 }
 
 :deep(.toolbar-icon *),
