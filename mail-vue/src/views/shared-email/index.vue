@@ -26,6 +26,7 @@
     >
       <el-table-column type="selection" width="46"/>
       <el-table-column prop="address" :label="$t('emailAccount')" min-width="210"/>
+      <el-table-column :label="$t('shareMailCount')" prop="emailCount" width="105"/>
       <el-table-column :label="$t('shareSource')" width="110">
         <template #default="{row}">
           <el-tag :type="row.sourceType === 'account' ? 'primary' : 'warning'">

@@ -199,6 +199,7 @@ const en = {
     allSharedEmail: 'All Shares',
     sharedInbox: 'Shared Inbox',
     shareSource: 'Source',
+    shareMailCount: 'Mail Count',
     shareOpenCount: 'Opens',
     shareExpireTime: 'Valid For',
     shareExpireForever: 'Forever',

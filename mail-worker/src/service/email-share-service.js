@@ -53,7 +53,7 @@ const emailShareService = {
 			.where(eq(emailShareLink.ownerUserId, userId))
 			.orderBy(desc(emailShareLink.updateTime))
 			.all();
-		return rows.map(row => this.formatShareRow(row));
+		return this.attachEmailCounts(c, rows);
 	},
 
 	async update(c, params, userId) {
@@ -113,7 +113,7 @@ const emailShareService = {
 		const rows = await orm(c).select().from(emailShareLink)
 			.orderBy(desc(emailShareLink.updateTime))
 			.all();
-		return rows.map(row => this.formatShareRow(row));
+		return this.attachEmailCounts(c, rows);
 	},
 
 	async adminUpdate(c, params) {
@@ -501,6 +501,20 @@ const emailShareService = {
 		return conditions;
 	},
 
+	async attachEmailCounts(c, rows) {
+		const counts = await Promise.all(rows.map(async row => {
+			const totalRow = await orm(c).select({ total: count() }).from(email)
+				.where(and(...this.publicEmailConditions(row)))
+				.get();
+			return Number(totalRow?.total || 0);
+		}));
+
+		return rows.map((row, index) => this.formatShareRow({
+			...row,
+			emailCount: counts[index],
+		}));
+	},
+
 	normalizeListParams(params) {
 		let emailId = Number(params.emailId);
 		let size = Number(params.size);
@@ -601,6 +615,7 @@ const emailShareService = {
 			enabled: row.status === SHARE_STATUS.ACTIVE && !expired,
 			expired,
 			openCount: row.openCount || 0,
+			emailCount: row.emailCount || 0,
 			createTime: row.createTime,
 			updateTime: row.updateTime,
 		};

@@ -199,6 +199,7 @@ const zh = {
     allSharedEmail: '全部共享',
     sharedInbox: '共享收件箱',
     shareSource: '共享来源',
+    shareMailCount: '邮件数量',
     shareOpenCount: '打开次数',
     shareExpireTime: '有效时间',
     shareExpireForever: '永久',
