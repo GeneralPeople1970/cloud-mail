@@ -57,8 +57,10 @@
               v-if="params.timeSort === 0" width="28" height="28"/>
         <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-up-outline" v-else
               width="28" height="28"/>
-        <Icon class="icon share" v-if="selectedEmailCount > 0" icon="fluent:share-24-regular" width="21" height="21" @click="openBatchShare"/>
         <Icon class="icon clear" icon="fluent:broom-sparkle-16-regular" width="22" height="22" @click="openBathDelete"/>
+      </template>
+      <template #afterReload>
+        <Icon class="icon share" v-if="selectedEmailCount > 0" icon="fluent:share-24-regular" width="21" height="21" @click="openBatchShare"/>
       </template>
     </emailScroll>
     <el-dialog v-model="showBathDelete" :title="$t('clearEmail')" width="335"

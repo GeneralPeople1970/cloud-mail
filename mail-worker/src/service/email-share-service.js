@@ -373,7 +373,8 @@ const emailShareService = {
 	async assertAllowedAddress(c, address, userId, linkType) {
 		const settings = await settingService.query(c);
 		const emailDomain = emailUtils.getDomain(address).toLowerCase();
-		const allowedDomains = this.normalizeDomains(settings.domainList?.length ? settings.domainList : c.env.domain);
+		const configuredDomains = settingService.resolveRandomEmailDomainList(settings, settings.domainList?.length ? settings.domainList : c.env.domain);
+		const allowedDomains = this.normalizeDomains(configuredDomains);
 		const subdomains = this.normalizeSubdomains(settings.randomEmailSubdomains);
 
 		const allowed = allowedDomains.some(domain => {

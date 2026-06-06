@@ -21,7 +21,8 @@ const randomEmailService = {
 
 	async generate(c, params, userId) {
 		const settings = await settingService.query(c);
-		const domainList = await this.userDomainList(c, settings.domainList?.length ? settings.domainList : c.env.domain);
+		const configuredDomains = settingService.resolveRandomEmailDomainList(settings, settings.domainList?.length ? settings.domainList : c.env.domain);
+		const domainList = await this.userDomainList(c, configuredDomains);
 		const subdomains = this.normalizeSubdomains(settings.randomEmailSubdomains);
 		const baseDomain = this.normalizeBaseDomain(params.baseDomain, domainList);
 		const domainPrefix = this.normalizeDomainPrefix(params.domainPrefix, subdomains);
@@ -155,7 +156,8 @@ const randomEmailService = {
 
 		const emailDomain = emailUtils.getDomain(address).toLowerCase();
 		const settings = await settingService.query(c);
-		const domainList = await this.userDomainList(c, settings.domainList?.length ? settings.domainList : c.env.domain);
+		const configuredDomains = settingService.resolveRandomEmailDomainList(settings, settings.domainList?.length ? settings.domainList : c.env.domain);
+		const domainList = await this.userDomainList(c, configuredDomains);
 		const subdomains = this.normalizeSubdomains(settings.randomEmailSubdomains);
 
 		if (!this.isAllowedDomain(emailDomain, domainList, subdomains)) {

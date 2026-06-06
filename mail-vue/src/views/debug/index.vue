@@ -13,20 +13,6 @@
       </div>
     </div>
 
-    <section class="debug-section debug-switch-section">
-      <div>
-        <div class="section-title">{{ $t('debugCapture') }}</div>
-        <p>{{ $t('debugCaptureDesc') }}</p>
-      </div>
-      <el-switch
-          v-model="debugEnabled"
-          :loading="savingDebug"
-          :active-value="1"
-          :inactive-value="0"
-          @change="saveDebugSwitch"
-      />
-    </section>
-
     <el-alert
         class="deploy-alert"
         type="warning"
@@ -49,10 +35,18 @@
         <strong>{{ runtime.hasToken ? $t('exists') : $t('notExists') }}</strong>
       </div>
       <div class="summary-item">
-        <span>{{ $t('debugFrontendErrorCount') }}</span>
-        <strong>{{ frontendErrors.length }}</strong>
+        <span>{{ $t('debugDebugSwitchState') }}</span>
+        <strong>{{ Number(settings?.debug) === 1 ? $t('enabled') : $t('disabled') }}</strong>
       </div>
     </div>
+
+    <section class="debug-section">
+      <div class="section-title">{{ $t('debugProjectDiagnostics') }}</div>
+      <el-table :data="projectDiagnostics" border>
+        <el-table-column prop="name" :label="$t('debugItem')" width="180"/>
+        <el-table-column prop="value" :label="$t('description')" min-width="260" show-overflow-tooltip/>
+      </el-table>
+    </section>
 
     <section class="debug-section">
       <div class="section-title">{{ $t('debugApiDiagnostics') }}</div>
@@ -71,7 +65,15 @@
     </section>
 
     <section class="debug-section">
-      <div class="section-title">{{ $t('debugFrontendErrors') }}</div>
+      <div class="section-title">{{ $t('debugCacheDiagnostics') }}</div>
+      <el-table :data="cacheDiagnostics" border>
+        <el-table-column prop="name" :label="$t('debugItem')" width="180"/>
+        <el-table-column prop="value" :label="$t('description')" min-width="260" show-overflow-tooltip/>
+      </el-table>
+    </section>
+
+    <section class="debug-section">
+      <div class="section-title">{{ $t('debugFrontendSupport') }}</div>
       <el-empty v-if="frontendErrors.length === 0" :description="$t('debugNoFrontendErrors')"/>
       <el-table v-else :data="frontendErrors" border>
         <el-table-column prop="time" :label="$t('time')" width="210"/>
@@ -94,8 +96,8 @@ import {storeToRefs} from 'pinia';
 import {useI18n} from 'vue-i18n';
 import {useSettingStore} from '@/store/setting.js';
 import {useUserStore} from '@/store/user.js';
-import {settingSet} from '@/request/setting.js';
-import {clearDebugErrors, getDebugErrors, setDebugEnabled} from '@/utils/debug-capture.js';
+import router from '@/router/index.js';
+import {clearDebugErrors, getDebugErrors} from '@/utils/debug-capture.js';
 
 defineOptions({
   name: 'debug'
@@ -108,10 +110,9 @@ const userStore = useUserStore();
 const {settings, domainList} = storeToRefs(settingStore);
 
 const loading = ref(false);
-const savingDebug = ref(false);
-const debugEnabled = ref(Number(settings.value?.debug) === 1 ? 1 : 0);
 const checks = ref([]);
 const frontendErrors = ref(getDebugErrors());
+const cacheDiagnostics = ref([]);
 
 const runtime = computed(() => ({
   generatedAt: new Date().toISOString(),
@@ -127,6 +128,25 @@ const runtime = computed(() => ({
       .slice(-10)
 }));
 
+const projectDiagnostics = computed(() => {
+  const setting = settings.value || {};
+  const routeNames = router.getRoutes()
+      .map(route => route.name)
+      .filter(Boolean)
+      .join(', ');
+
+  return [
+    {name: 'API Base', value: API_BASE},
+    {name: t('domain'), value: formatList(domainList.value)},
+    {name: t('randomEmailDomainList'), value: formatList(setting.randomEmailAvailableDomainList || domainList.value)},
+    {name: t('randomEmailSubdomains'), value: setting.randomEmailSubdomains || t('notConfigured')},
+    {name: t('randomEmailMode'), value: setting.randomEmailMode || 'letters,numbers'},
+    {name: t('debugStorageType'), value: setting.storageType || t('unknown')},
+    {name: t('debugRouteDiagnostics'), value: routeNames},
+    {name: t('debugFrontendErrorCount'), value: String(frontendErrors.value.length)},
+  ];
+});
+
 const storeSnapshot = computed(() => ({
   lang: settingStore.lang,
   domainCount: Array.isArray(domainList.value) ? domainList.value.length : 'not-array',
@@ -134,9 +154,13 @@ const storeSnapshot = computed(() => ({
   randomEmail: {
     subdomainsType: typeof settings.value?.randomEmailSubdomains,
     length: settings.value?.randomEmailLength,
-    mode: settings.value?.randomEmailMode
+    mode: settings.value?.randomEmailMode,
+    domainSource: settings.value?.randomEmailDomainSource,
+    domainList: settings.value?.randomEmailDomainList,
+    availableDomainList: settings.value?.randomEmailAvailableDomainList
   },
   debug: settings.value?.debug,
+  storageType: settings.value?.storageType,
   user: {
     hasUser: Boolean(userStore.user?.userId || userStore.user?.email),
     permKeys: Array.isArray(userStore.user?.permKeys) ? userStore.user.permKeys : []
@@ -146,6 +170,8 @@ const storeSnapshot = computed(() => ({
 const report = computed(() => JSON.stringify({
   runtime: runtime.value,
   store: storeSnapshot.value,
+  projectDiagnostics: projectDiagnostics.value,
+  cacheDiagnostics: cacheDiagnostics.value,
   endpointChecks: checks.value,
   frontendErrors: frontendErrors.value
 }, null, 2));
@@ -154,10 +180,13 @@ const checkDefinitions = computed(() => [
   {name: t('debugPublicConfig'), path: () => '/setting/websiteConfig'},
   {name: t('debugSystemSetting'), path: () => '/setting/query'},
   {name: t('debugCurrentUser'), path: () => '/my/loginUserInfo'},
-  {name: t('debugRandomEmailList'), path: () => `/randomEmail/list?page=1&size=1&address=${encodeURIComponent(buildRandomDiagnosticAddress())}`}
+  {name: t('debugRandomEmailQuota'), path: () => '/randomEmail/quota'},
+  {name: t('debugRandomEmailList'), path: () => `/randomEmail/list?page=1&size=1&address=${encodeURIComponent(buildRandomDiagnosticAddress())}`},
+  {name: t('debugSharedEmailList'), path: () => '/emailShare/list'}
 ]);
 
 onMounted(() => {
+  refreshCacheDiagnostics();
   runDiagnostics();
 });
 
@@ -173,27 +202,6 @@ async function runDiagnostics() {
   }
 
   loading.value = false;
-}
-
-async function saveDebugSwitch(value) {
-  savingDebug.value = true;
-  const debug = Number(value) === 1 ? 1 : 0;
-
-  try {
-    await settingSet({debug});
-    settingStore.settings = {...settingStore.settings, debug};
-    debugEnabled.value = debug;
-    setDebugEnabled(debug === 1);
-    ElMessage({
-      message: debug === 1 ? t('debugEnabledMsg') : t('debugDisabledMsg'),
-      type: 'success',
-      plain: true
-    });
-  } catch (e) {
-    debugEnabled.value = Number(settingStore.settings.debug) === 1 ? 1 : 0;
-  } finally {
-    savingDebug.value = false;
-  }
 }
 
 async function runCheck(definition) {
@@ -247,9 +255,51 @@ async function runCheck(definition) {
 }
 
 function buildRandomDiagnosticAddress() {
-  const domain = (Array.isArray(domainList.value) && domainList.value[0] ? domainList.value[0] : '@example.com')
+  const domains = Array.isArray(settings.value?.randomEmailAvailableDomainList) && settings.value.randomEmailAvailableDomainList.length
+      ? settings.value.randomEmailAvailableDomainList
+      : domainList.value;
+  const domain = (Array.isArray(domains) && domains[0] ? domains[0] : '@example.com')
       .replace(/^@?/, '@');
   return `debug-diagnostic-${Date.now()}${domain}`;
+}
+
+function formatList(value) {
+  if (!Array.isArray(value) || value.length === 0) {
+    return t('notConfigured');
+  }
+  return value.join(', ');
+}
+
+async function refreshCacheDiagnostics() {
+  const diagnostics = [];
+
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    diagnostics.push({name: t('debugServiceWorker'), value: String(registrations.length)});
+  } else {
+    diagnostics.push({name: t('debugServiceWorker'), value: t('notExists')});
+  }
+
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    diagnostics.push({name: t('debugCacheStorage'), value: keys.length ? keys.join(', ') : t('notExists')});
+  } else {
+    diagnostics.push({name: t('debugCacheStorage'), value: t('notExists')});
+  }
+
+  if (indexedDB.databases) {
+    const databases = await indexedDB.databases();
+    diagnostics.push({
+      name: t('debugIndexedDB'),
+      value: databases.map(database => database.name).filter(Boolean).join(', ') || t('notExists')
+    });
+  } else {
+    diagnostics.push({name: t('debugIndexedDB'), value: t('unknown')});
+  }
+
+  diagnostics.push({name: t('debugLocalStorageKeys'), value: String(localStorage.length)});
+  diagnostics.push({name: t('debugSessionStorageKeys'), value: String(sessionStorage.length)});
+  cacheDiagnostics.value = diagnostics;
 }
 
 function buildApiUrl(path) {

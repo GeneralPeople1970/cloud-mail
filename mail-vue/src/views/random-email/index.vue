@@ -111,7 +111,10 @@ const params = reactive({
 })
 
 const baseDomainList = computed(() => {
-  return (settingStore.domainList || [])
+  const domains = Array.isArray(settingStore.settings.randomEmailAvailableDomainList) && settingStore.settings.randomEmailAvailableDomainList.length
+      ? settingStore.settings.randomEmailAvailableDomainList
+      : (settingStore.domainList || [])
+  return domains
       .map(domain => String(domain || '').trim())
       .filter(Boolean)
       .map(domain => domain.replace(/^@/, ''))

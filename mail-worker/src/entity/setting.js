@@ -56,6 +56,8 @@ export const setting = sqliteTable('setting', {
 	randomEmailSubdomains: text('random_email_subdomains').default('').notNull(),
 	randomEmailLength: integer('random_email_length').default(10).notNull(),
 	randomEmailMode: text('random_email_mode').default('letters,numbers').notNull(),
+	randomEmailDomainSource: text('random_email_domain_source').default('cloudflare').notNull(),
+	randomEmailDomainList: text('random_email_domain_list').default('').notNull(),
 	debug: integer('debug').default(0).notNull(),
 	authDomainSource: text('auth_domain_source').default('cloudflare').notNull(),
 	authDomainList: text('auth_domain_list').default('').notNull()

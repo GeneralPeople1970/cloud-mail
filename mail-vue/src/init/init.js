@@ -87,6 +87,11 @@ function normalizeWebsiteConfig(setting = {}) {
         randomEmailSubdomains: setting.randomEmailSubdomains ?? '',
         randomEmailLength: setting.randomEmailLength ?? 10,
         randomEmailMode: setting.randomEmailMode || 'letters,numbers',
+        randomEmailDomainSource: setting.randomEmailDomainSource === 'custom' ? 'custom' : 'cloudflare',
+        randomEmailDomainList: setting.randomEmailDomainList || '',
+        randomEmailAvailableDomainList: Array.isArray(setting.randomEmailAvailableDomainList)
+            ? setting.randomEmailAvailableDomainList
+            : (Array.isArray(setting.domainList) ? setting.domainList : []),
         debug: Number(setting.debug) === 1 ? 1 : 0,
         authDomainSource: setting.authDomainSource === 'custom' ? 'custom' : 'cloudflare',
         authDomainList: setting.authDomainList || '',

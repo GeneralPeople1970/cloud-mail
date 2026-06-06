@@ -271,6 +271,55 @@
             <div class="card-content">
               <div class="setting-item">
                 <div>
+                  <span>{{ $t('randomEmailDomainSource') }}</span>
+                  <el-tooltip effect="dark" :content="$t('randomEmailDomainSourceDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-select
+                      class="auth-domain-source-select"
+                      size="small"
+                      v-model="setting.randomEmailDomainSource"
+                      @change="changeRandomEmailDomainSource"
+                  >
+                    <el-option
+                        v-for="item in authDomainSourceOptions"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                    />
+                  </el-select>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('randomEmailDomainList') }}</span>
+                  <el-tooltip effect="dark" :content="$t('randomEmailDomainListDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-select
+                      class="auth-domain-list-select"
+                      size="small"
+                      v-model="randomEmailDomainList"
+                      multiple
+                      :disabled="setting.randomEmailDomainSource !== 'custom'"
+                      :placeholder="$t('select')"
+                      @change="changeRandomEmailDomainList"
+                  >
+                    <el-option
+                        v-for="item in setting.domainList"
+                        :key="item"
+                        :label="item"
+                        :value="item"
+                    />
+                  </el-select>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div>
                   <span>{{ $t('randomEmailLength') }}</span>
                   <el-tooltip effect="dark" :content="$t('randomEmailLengthDesc')">
                     <Icon class="warning" icon="fe:warning" width="18" height="18"/>
@@ -325,6 +374,29 @@
                       @add-tag="randomEmailSubdomainAddTag"
                       @remove-tag="scheduleSaveRandomEmailSubdomains"
                       @clear="scheduleSaveRandomEmailSubdomains"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="card-title">{{ $t('debug') }}</div>
+            <div class="card-content">
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('debugSwitch') }}</span>
+                  <el-tooltip effect="dark" :content="$t('debugSwitchDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-switch
+                      @change="changeField('debug', $event)"
+                      :before-change="beforeChange"
+                      :active-value="1"
+                      :inactive-value="0"
+                      v-model="setting.debug"
                   />
                 </div>
               </div>
@@ -1035,6 +1107,7 @@ const blackListForm = ref({
 const aiCodeFilter = ref([])
 const randomEmailSubdomains = ref([])
 const authDomainList = ref([])
+const randomEmailDomainList = ref([])
 
 const authRefreshOptions = computed(() => [
   {label: t('disable'), value: 0},
@@ -1128,6 +1201,7 @@ function getSettings() {
     resetAiCodeFilter()
     resetRandomEmailSubdomains()
     resetAuthDomainList()
+    resetRandomEmailDomainList()
     nextTick(() => {
       settingReady.value = true
     })
@@ -1144,6 +1218,9 @@ function normalizeSettingData(settingData = {}) {
   data.randomEmailSubdomains = data.randomEmailSubdomains || ''
   data.randomEmailLength = Number(data.randomEmailLength) || 10
   data.randomEmailMode = normalizeRandomEmailModeValue(data.randomEmailMode).join(',')
+  data.randomEmailDomainSource = data.randomEmailDomainSource === 'custom' ? 'custom' : 'cloudflare'
+  data.randomEmailDomainList = normalizeDomainList(data.randomEmailDomainList, data.domainList).join(',')
+  data.randomEmailAvailableDomainList = Array.isArray(data.randomEmailAvailableDomainList) ? data.randomEmailAvailableDomainList : data.domainList
   data.debug = Number(data.debug) === 1 ? 1 : 0
   data.authDomainSource = data.authDomainSource === 'custom' ? 'custom' : 'cloudflare'
   data.authDomainList = normalizeAuthDomainList(data.authDomainList, data.domainList).join(',')
@@ -1179,6 +1256,10 @@ function normalizeDomain(value) {
 }
 
 function normalizeAuthDomainList(value, domainList = []) {
+  return normalizeDomainList(value, domainList)
+}
+
+function normalizeDomainList(value, domainList = []) {
   const allowed = new Set((Array.isArray(domainList) ? domainList : [])
       .map(normalizeDomain)
       .filter(Boolean))
@@ -1485,6 +1566,10 @@ function resetAuthDomainList() {
   authDomainList.value = normalizeAuthDomainList(setting.value.authDomainList, setting.value.domainList)
 }
 
+function resetRandomEmailDomainList() {
+  randomEmailDomainList.value = normalizeDomainList(setting.value.randomEmailDomainList, setting.value.domainList)
+}
+
 function saveEmailPrefix() {
   const form = {}
   form.minEmailPrefix = minEmailPrefix.value
@@ -1515,6 +1600,21 @@ function changeAuthDomainList(value) {
   authDomainList.value = domains
   setting.value.authDomainList = domains.join(',')
   editSetting({authDomainList: domains.join(',')}, false)
+}
+
+function changeRandomEmailDomainSource(value) {
+  if (!settingReady.value) return
+  const source = value === 'custom' ? 'custom' : 'cloudflare'
+  setting.value.randomEmailDomainSource = source
+  editSetting({randomEmailDomainSource: source}, true)
+}
+
+function changeRandomEmailDomainList(value) {
+  if (!settingReady.value) return
+  const domains = normalizeDomainList(value, setting.value.domainList)
+  randomEmailDomainList.value = domains
+  setting.value.randomEmailDomainList = domains.join(',')
+  editSetting({randomEmailDomainList: domains.join(',')}, true)
 }
 
 const opacityChange = debounce(doOpacityChange, 1000, {

@@ -76,6 +76,8 @@ const settingService = {
 		setting.randomEmailSubdomains ??= '';
 		setting.randomEmailLength ??= 10;
 		setting.randomEmailMode = this.normalizeRandomEmailMode(setting.randomEmailMode);
+		setting.randomEmailDomainSource = this.normalizeDomainSource(setting.randomEmailDomainSource);
+		setting.randomEmailDomainList = this.normalizeDomainList(setting.randomEmailDomainList, domainList).join(',');
 		setting.debug ??= 0;
 		setting.authDomainSource = this.normalizeAuthDomainSource(setting.authDomainSource);
 		setting.authDomainList = this.normalizeAuthDomainList(setting.authDomainList, domainList).join(',');
@@ -167,6 +169,14 @@ const settingService = {
 			params.randomEmailMode = this.normalizeRandomEmailMode(params.randomEmailMode);
 		}
 
+		if (params.randomEmailDomainSource !== undefined) {
+			params.randomEmailDomainSource = this.normalizeDomainSource(params.randomEmailDomainSource);
+		}
+
+		if (params.randomEmailDomainList !== undefined) {
+			params.randomEmailDomainList = this.normalizeDomainList(params.randomEmailDomainList, settingData.domainList).join(',');
+		}
+
 		if (params.debug !== undefined) {
 			params.debug = Number(params.debug) === 1 ? 1 : 0;
 		}
@@ -244,6 +254,7 @@ const settingService = {
 		const domainList = await this.filterDomainListByAuth(c, settingRow.domainList, authInfo);
 		const visibleDomainList = settingRow.loginDomain === 1 && !authInfo ? [] : domainList;
 		const loginRegisterDomainList = this.resolveLoginRegisterDomainList(settingRow, visibleDomainList);
+		const randomEmailDomainList = this.resolveRandomEmailDomainList(settingRow, visibleDomainList);
 
 		return {
 			register: settingRow.register,
@@ -282,6 +293,9 @@ const settingService = {
 			randomEmailSubdomains: settingRow.randomEmailSubdomains,
 			randomEmailLength: settingRow.randomEmailLength,
 			randomEmailMode: settingRow.randomEmailMode,
+			randomEmailDomainSource: settingRow.randomEmailDomainSource,
+			randomEmailDomainList: this.normalizeDomainList(settingRow.randomEmailDomainList, visibleDomainList).join(','),
+			randomEmailAvailableDomainList: randomEmailDomainList,
 			debug: settingRow.debug,
 			projectLink: settingRow.projectLink
 		};
@@ -298,10 +312,18 @@ const settingService = {
 	},
 
 	normalizeAuthDomainSource(value) {
-		return value === 'custom' ? 'custom' : 'cloudflare';
+		return this.normalizeDomainSource(value);
 	},
 
 	normalizeAuthDomainList(value, domainList = []) {
+		return this.normalizeDomainList(value, domainList);
+	},
+
+	normalizeDomainSource(value) {
+		return value === 'custom' ? 'custom' : 'cloudflare';
+	},
+
+	normalizeDomainList(value, domainList = []) {
 		const allowed = new Set((Array.isArray(domainList) ? domainList : [])
 			.map(domain => this.normalizeDomain(domain))
 			.filter(Boolean));
@@ -327,6 +349,18 @@ const settingService = {
 		}
 
 		const customDomainList = this.normalizeAuthDomainList(settingRow.authDomainList, normalizedDomainList);
+		return customDomainList.length ? customDomainList : normalizedDomainList;
+	},
+
+	resolveRandomEmailDomainList(settingRow, domainList) {
+		const normalizedDomainList = (Array.isArray(domainList) ? domainList : [])
+			.map(domain => this.normalizeDomain(domain))
+			.filter(Boolean);
+		if (this.normalizeDomainSource(settingRow.randomEmailDomainSource) !== 'custom') {
+			return normalizedDomainList;
+		}
+
+		const customDomainList = this.normalizeDomainList(settingRow.randomEmailDomainList, normalizedDomainList);
 		return customDomainList.length ? customDomainList : normalizedDomainList;
 	},
 

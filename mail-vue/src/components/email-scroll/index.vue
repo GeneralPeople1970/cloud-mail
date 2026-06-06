@@ -13,6 +13,7 @@
 
         <slot name="first"></slot>
         <Icon class="icon reload" icon="ion:reload" width="18" height="18" @click="refresh"/>
+        <slot name="afterReload"></slot>
         <Icon v-perm="'email:delete'" class="icon delete" icon="uiw:delete" width="16" height="16"
               v-if="allowDelete && getSelectedMailsIds().length > 0"
               @click="handleDelete"/>
