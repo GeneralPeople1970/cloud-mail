@@ -72,6 +72,16 @@ const routes = [
                 }
             },
             {
+                path: '/expired-email',
+                name: 'expired-email',
+                component: () => import('@/views/expired-email/index.vue'),
+                meta: {
+                    title: 'expiredEmail',
+                    name: 'expired-email',
+                    menu: true
+                }
+            },
+            {
                 path: '/debug',
                 name: 'debug',
                 component: () => import('@/views/debug/index.vue'),

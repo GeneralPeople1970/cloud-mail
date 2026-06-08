@@ -901,6 +901,144 @@ const emailService = {
 		return list;
 	},
 
+	async expiredList(c, params) {
+		let { emailId, size, timeSort } = params;
+
+		size = Number(size);
+		emailId = Number(emailId);
+		timeSort = Number(timeSort);
+
+		if (size > 50) {
+			size = 50;
+		}
+
+		if (!emailId) {
+			emailId = timeSort ? 0 : 9999999999;
+		}
+
+		const conditions = this.expiredEmailConditions(params);
+		const countConditions = [...conditions];
+
+		if (timeSort) {
+			conditions.unshift(gt(email.emailId, emailId));
+		} else {
+			conditions.unshift(lt(email.emailId, emailId));
+		}
+
+		const query = orm(c).select({ ...email, userEmail: user.email })
+			.from(email)
+			.leftJoin(user, eq(email.userId, user.userId))
+			.where(and(...conditions));
+
+		const queryCount = orm(c).select({ total: count() })
+			.from(email)
+			.leftJoin(user, eq(email.userId, user.userId))
+			.where(and(...countConditions));
+
+		if (timeSort) {
+			query.orderBy(asc(email.emailId));
+		} else {
+			query.orderBy(desc(email.emailId));
+		}
+
+		const [list, totalRow] = await Promise.all([query.limit(size).all(), queryCount.get()]);
+		await this.emailAddAtt(c, list);
+
+		const latestEmail = list[0] || {
+			emailId: 0,
+			accountId: 0,
+			userId: 0,
+		};
+
+		return { list, total: totalRow.total, latestEmail };
+	},
+
+	async expiredBatchDelete(c, params) {
+		const conditions = this.expiredEmailConditions(params);
+		const emailIdsRow = await orm(c).select({ emailId: email.emailId }).from(email)
+			.leftJoin(user, eq(email.userId, user.userId))
+			.where(and(...conditions))
+			.all();
+		const emailIds = emailIdsRow.map(row => row.emailId);
+
+		if (emailIds.length === 0) {
+			return { total: 0 };
+		}
+
+		await attService.removeByEmailIds(c, emailIds);
+		await starService.removeByEmailIds(c, emailIds);
+		await orm(c).delete(email).where(inArray(email.emailId, emailIds)).run();
+		return { total: emailIds.length };
+	},
+
+	async autoDeleteExpired(c) {
+		const settings = await settingService.query(c);
+		if (Number(settings.expiredEmailAutoDelete) !== 1) {
+			return { total: 0 };
+		}
+		return this.expiredBatchDelete(c, {
+			days: settings.expiredEmailDays,
+			type: 'all',
+		});
+	},
+
+	expiredEmailConditions(params) {
+		let { name, subject, accountEmail, userEmail, type } = params;
+		const days = this.normalizeExpiredEmailDays(params.days);
+		const cutoff = dayjs().subtract(days, 'day').format('YYYY-MM-DD HH:mm:ss');
+		const conditions = [
+			lte(email.createTime, cutoff),
+			ne(email.status, emailConst.status.SAVING),
+		];
+
+		if (type === 'send') {
+			conditions.push(eq(email.type, emailConst.type.SEND));
+		}
+
+		if (type === 'receive') {
+			conditions.push(eq(email.type, emailConst.type.RECEIVE));
+		}
+
+		if (type === 'delete') {
+			conditions.push(eq(email.isDel, isDel.DELETE));
+		}
+
+		if (type === 'noone') {
+			conditions.push(eq(email.status, emailConst.status.NOONE));
+		}
+
+		if (userEmail) {
+			conditions.push(sql`${user.email} COLLATE NOCASE LIKE ${'%' + userEmail + '%'}`);
+		}
+
+		if (accountEmail) {
+			conditions.push(
+				or(
+					sql`${email.toEmail} COLLATE NOCASE LIKE ${'%' + accountEmail + '%'}`,
+					sql`${email.sendEmail} COLLATE NOCASE LIKE ${'%' + accountEmail + '%'}`,
+				)
+			);
+		}
+
+		if (name) {
+			conditions.push(sql`${email.name} COLLATE NOCASE LIKE ${'%' + name + '%'}`);
+		}
+
+		if (subject) {
+			conditions.push(sql`${email.subject} COLLATE NOCASE LIKE ${'%' + subject + '%'}`);
+		}
+
+		return conditions;
+	},
+
+	normalizeExpiredEmailDays(value) {
+		const days = Number(value);
+		if (!days || Number.isNaN(days) || days < 1) {
+			return 30;
+		}
+		return Math.min(3650, Math.floor(days));
+	},
+
 	async emailAddAtt(c, list) {
 
 		const emailIds = list.map(item => item.emailId);

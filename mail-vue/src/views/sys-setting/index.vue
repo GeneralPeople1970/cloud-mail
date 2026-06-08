@@ -381,22 +381,16 @@
           </div>
 
           <div class="settings-card">
-            <div class="card-title">{{ $t('debug') }}</div>
-            <div class="card-content">
-              <div class="setting-item">
+            <div class="card-title">{{ $t('sidebarControl') }}</div>
+            <div class="card-content sidebar-control">
+              <div class="setting-item" v-for="item in sidebarMenuOptions" :key="item.key">
                 <div>
-                  <span>{{ $t('debugSwitch') }}</span>
-                  <el-tooltip effect="dark" :content="$t('debugSwitchDesc')">
-                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
-                  </el-tooltip>
+                  <span>{{ item.label }}</span>
                 </div>
                 <div>
                   <el-switch
-                      @change="changeField('debug', $event)"
-                      :before-change="beforeChange"
-                      :active-value="1"
-                      :inactive-value="0"
-                      v-model="setting.debug"
+                      :model-value="sidebarMenuEnabled(item.key)"
+                      @change="changeSidebarMenu(item.key, $event)"
                   />
                 </div>
               </div>
@@ -1129,6 +1123,43 @@ const randomEmailModeOptions = computed(() => [
   {label: t('randomEmailModeSymbols'), value: 'symbols'},
 ])
 
+const defaultSidebarMenus = [
+  'inbox',
+  'send',
+  'draft',
+  'star',
+  'random-email',
+  'shared-email',
+  'setting',
+  'analysis',
+  'user',
+  'all-email',
+  'expired-email',
+  'role',
+  'reg-key',
+  'sys-setting',
+]
+
+const knownSidebarMenus = [...defaultSidebarMenus, 'debug']
+
+const sidebarMenuOptions = computed(() => [
+  {key: 'inbox', label: t('inbox')},
+  {key: 'send', label: t('sent')},
+  {key: 'draft', label: t('drafts')},
+  {key: 'star', label: t('starred')},
+  {key: 'random-email', label: t('randomEmail')},
+  {key: 'shared-email', label: t('sharedEmail')},
+  {key: 'setting', label: t('settings')},
+  {key: 'analysis', label: t('analytics')},
+  {key: 'user', label: t('allUsers')},
+  {key: 'all-email', label: t('allMail')},
+  {key: 'expired-email', label: t('expiredEmail')},
+  {key: 'role', label: t('permissions')},
+  {key: 'reg-key', label: t('inviteCode')},
+  {key: 'sys-setting', label: t('SystemSettings')},
+  {key: 'debug', label: t('debug')},
+])
+
 const randomSettingBaseWidth = 150
 const randomSettingMaxWidth = 360
 
@@ -1222,6 +1253,9 @@ function normalizeSettingData(settingData = {}) {
   data.randomEmailDomainList = normalizeDomainList(data.randomEmailDomainList, data.domainList).join(',')
   data.randomEmailAvailableDomainList = Array.isArray(data.randomEmailAvailableDomainList) ? data.randomEmailAvailableDomainList : data.domainList
   data.debug = Number(data.debug) === 1 ? 1 : 0
+  data.expiredEmailAutoDelete = Number(data.expiredEmailAutoDelete) === 1 ? 1 : 0
+  data.expiredEmailDays = normalizeExpiredEmailDays(data.expiredEmailDays)
+  data.sidebarMenuConfig = normalizeSidebarMenuConfig(data.sidebarMenuConfig).join(',')
   data.authDomainSource = data.authDomainSource === 'custom' ? 'custom' : 'cloudflare'
   data.authDomainList = normalizeAuthDomainList(data.authDomainList, data.domainList).join(',')
   data.loginRegisterDomainList = Array.isArray(data.loginRegisterDomainList) ? data.loginRegisterDomainList : data.domainList
@@ -1269,6 +1303,22 @@ function normalizeDomainList(value, domainList = []) {
           .map(normalizeDomain)
           .filter(domain => domain && allowed.has(domain))
   ))
+}
+
+function normalizeSidebarMenuConfig(value) {
+  const allowed = new Set(knownSidebarMenus)
+  const rawList = Array.isArray(value) ? value : `${value || ''}`.split(',')
+  const selected = rawList
+      .map(item => String(item || '').trim())
+      .filter(item => allowed.has(item))
+  const unique = Array.from(new Set(selected))
+  return unique.length ? unique : [...defaultSidebarMenus]
+}
+
+function normalizeExpiredEmailDays(value) {
+  const days = Number(value)
+  if (!days || Number.isNaN(days) || days < 1) return 30
+  return Math.min(3650, Math.floor(days))
 }
 
 function randomControlWidth(width) {
@@ -1615,6 +1665,25 @@ function changeRandomEmailDomainList(value) {
   randomEmailDomainList.value = domains
   setting.value.randomEmailDomainList = domains.join(',')
   editSetting({randomEmailDomainList: domains.join(',')}, true)
+}
+
+function sidebarMenuEnabled(key) {
+  return normalizeSidebarMenuConfig(setting.value.sidebarMenuConfig).includes(key)
+}
+
+function changeSidebarMenu(key, enabled) {
+  if (!settingReady.value) return
+  const menus = normalizeSidebarMenuConfig(setting.value.sidebarMenuConfig)
+  const next = enabled
+      ? Array.from(new Set([...menus, key]))
+      : menus.filter(item => item !== key)
+  setting.value.sidebarMenuConfig = next.join(',')
+  const form = {sidebarMenuConfig: next.join(',')}
+  if (key === 'debug') {
+    form.debug = enabled ? 1 : 0
+    setting.value.debug = form.debug
+  }
+  editSetting(form, false)
 }
 
 const opacityChange = debounce(doOpacityChange, 1000, {
@@ -2259,6 +2328,11 @@ function editSetting(settingForm, refreshStatus = true) {
 .auth-domain-list-select {
   width: 240px;
   max-width: 100%;
+}
+
+.sidebar-control {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .email-prefix {

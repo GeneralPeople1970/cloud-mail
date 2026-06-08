@@ -13,6 +13,24 @@ import verifyRecordService from './verify-record-service';
 import JwtUtils from '../utils/jwt-utils';
 import {eq} from 'drizzle-orm';
 
+const DEFAULT_SIDEBAR_MENUS = [
+	'inbox',
+	'send',
+	'draft',
+	'star',
+	'random-email',
+	'shared-email',
+	'setting',
+	'analysis',
+	'user',
+	'all-email',
+	'expired-email',
+	'role',
+	'reg-key',
+	'sys-setting',
+];
+const KNOWN_SIDEBAR_MENUS = [...DEFAULT_SIDEBAR_MENUS, 'debug'];
+
 const settingService = {
 
 	async refresh(c) {
@@ -81,6 +99,9 @@ const settingService = {
 		setting.debug ??= 0;
 		setting.authDomainSource = this.normalizeAuthDomainSource(setting.authDomainSource);
 		setting.authDomainList = this.normalizeAuthDomainList(setting.authDomainList, domainList).join(',');
+		setting.expiredEmailAutoDelete = Number(setting.expiredEmailAutoDelete) === 1 ? 1 : 0;
+		setting.expiredEmailDays = this.normalizeExpiredEmailDays(setting.expiredEmailDays);
+		setting.sidebarMenuConfig = this.normalizeSidebarMenuConfig(setting.sidebarMenuConfig);
 
 		setting.linuxdoClientId = c.env.linuxdo_client_id;
 		setting.linuxdoCallbackUrl = c.env.linuxdo_callback_url;
@@ -187,6 +208,19 @@ const settingService = {
 
 		if (params.authDomainList !== undefined) {
 			params.authDomainList = this.normalizeAuthDomainList(params.authDomainList, settingData.domainList).join(',');
+		}
+
+		if (params.expiredEmailAutoDelete !== undefined) {
+			params.expiredEmailAutoDelete = Number(params.expiredEmailAutoDelete) === 1 ? 1 : 0;
+		}
+
+		if (params.expiredEmailDays !== undefined) {
+			params.expiredEmailDays = this.normalizeExpiredEmailDays(params.expiredEmailDays);
+		}
+
+		if (params.sidebarMenuConfig !== undefined) {
+			params.sidebarMenuConfig = this.normalizeSidebarMenuConfig(params.sidebarMenuConfig);
+			params.debug = params.sidebarMenuConfig.split(',').includes('debug') ? 1 : 0;
 		}
 
 		params.resendTokens = JSON.stringify(resendTokens);
@@ -297,8 +331,33 @@ const settingService = {
 			randomEmailDomainList: this.normalizeDomainList(settingRow.randomEmailDomainList, visibleDomainList).join(','),
 			randomEmailAvailableDomainList: randomEmailDomainList,
 			debug: settingRow.debug,
+			expiredEmailAutoDelete: settingRow.expiredEmailAutoDelete,
+			expiredEmailDays: settingRow.expiredEmailDays,
+			sidebarMenuConfig: this.normalizeSidebarMenuConfig(settingRow.sidebarMenuConfig),
 			projectLink: settingRow.projectLink
 		};
+	},
+
+	defaultSidebarMenus() {
+		return [...DEFAULT_SIDEBAR_MENUS];
+	},
+
+	normalizeSidebarMenuConfig(value) {
+		const allowed = new Set(KNOWN_SIDEBAR_MENUS);
+		const rawList = Array.isArray(value) ? value : String(value || '').split(',');
+		const selected = rawList
+			.map(item => String(item || '').trim())
+			.filter(item => allowed.has(item));
+		const unique = Array.from(new Set(selected));
+		return (unique.length ? unique : DEFAULT_SIDEBAR_MENUS).join(',');
+	},
+
+	normalizeExpiredEmailDays(value) {
+		const days = Number(value);
+		if (!days || Number.isNaN(days) || days < 1) {
+			return 30;
+		}
+		return Math.min(3650, Math.floor(days));
 	},
 
 	normalizeRandomEmailMode(value) {

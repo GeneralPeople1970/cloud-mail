@@ -93,10 +93,19 @@ function normalizeWebsiteConfig(setting = {}) {
             ? setting.randomEmailAvailableDomainList
             : (Array.isArray(setting.domainList) ? setting.domainList : []),
         debug: Number(setting.debug) === 1 ? 1 : 0,
+        expiredEmailAutoDelete: Number(setting.expiredEmailAutoDelete) === 1 ? 1 : 0,
+        expiredEmailDays: normalizeExpiredEmailDays(setting.expiredEmailDays),
+        sidebarMenuConfig: setting.sidebarMenuConfig || '',
         authDomainSource: setting.authDomainSource === 'custom' ? 'custom' : 'cloudflare',
         authDomainList: setting.authDomainList || '',
         loginRegisterDomainList: Array.isArray(setting.loginRegisterDomainList)
             ? setting.loginRegisterDomainList
             : (Array.isArray(setting.domainList) ? setting.domainList : [])
     };
+}
+
+function normalizeExpiredEmailDays(value) {
+    const days = Number(value)
+    if (!days || Number.isNaN(days) || days < 1) return 30
+    return Math.min(3650, Math.floor(days))
 }
