@@ -34,18 +34,6 @@
 
 只需要一个域名，就可以创建多个不同的邮箱，类似各大邮箱平台，本项目支持署到 Cloudflare Workers ，降低服务器成本，搭建自己的邮箱服务
 
-## 项目展示
-
-- [在线演示](https://skymail.ink)<br>
-- [部署文档](https://doc.skymail.ink)<br>
-
-| ![](/doc/demo/demo1.png) | ![](/doc/demo/demo2.png) |
-|-----------------------|-----------------------|
-| ![](/doc/demo/demo3.png) | ![](/doc/demo/demo4.png) |
-
-
-
-
 ## 功能介绍
 
 - **💰 低成本使用**： 可部署到 Cloudflare Workers 降低服务器成本
@@ -139,20 +127,6 @@ cloud-mail
 └── └── env.release				# 项目配置
 ```
 
-## 赞助
-
-<a href="https://doc.skymail.ink/support.html" >
-<img width="170px" src="./doc/images/support.png" alt="">
-</a>
-
 ## 许可证
 
-本项目采用 [MIT](LICENSE) 许可证	
-
-
-## 交流
-
-[Telegram](https://t.me/cloud_mail_tg)
-
-
-
+本项目采用 [MIT](LICENSE) 许可证
