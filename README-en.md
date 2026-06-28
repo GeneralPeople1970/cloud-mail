@@ -5,32 +5,29 @@
     <p align="center">
        <a href="/README.md" style="margin-left: 5px">简体中文</a> | English 
     </p>
-    <p align="center">
-        <a href="https://github.com/maillab/cloud-mail/tree/main?tab=MIT-1-ov-file" target="_blank" >
-            <img src="https://img.shields.io/badge/license-MIT-green" />
-        </a>    
-        <a href="https://github.com/maillab/cloud-mail/releases" target="_blank" >
-            <img src="https://img.shields.io/github/v/release/maillab/cloud-mail" alt="releases" />
-        </a>  
-        <a href="https://github.com/maillab/cloud-mail/issues" >
-            <img src="https://img.shields.io/github/issues/maillab/cloud-mail" alt="issues" />
-        </a>  
-        <a href="https://github.com/maillab/cloud-mail/stargazers" target="_blank">
-            <img src="https://img.shields.io/github/stars/maillab/cloud-mail" alt="stargazers" />
-        </a>  
-        <a href="https://github.com/maillab/cloud-mail/forks" target="_blank" >
-            <img src="https://img.shields.io/github/forks/maillab/cloud-mail" alt="forks" />
-        </a>
-    </p>
-    <p align="center">
-        <a href="https://trendshift.io/repositories/20459" target="_blank" >
-            <img src="https://trendshift.io/api/badge/repositories/20459" alt="trendshift" >
-        </a>
-    </p>
 </p>
 
 ## Description
 With only one domain, you can create multiple different email addresses, similar to major email platforms. This project can be deployed on Cloudflare Workers to reduce server costs and build your own email service.
+
+This fork adds random email generation, public email sharing, expired email cleanup, all-mailbox aggregation, auth-page domain display, sidebar visibility control, and deployment diagnostics for temporary receiving, public sharing, and more detailed admin management.
+
+## Fork Enhancements
+
+- **🎲 Random Email**: Generate random addresses by domain, length, character mode, and role quota, with a read-only random inbox.
+
+- **🔗 Email Sharing**: Create public share links for registered accounts or random addresses, and manage share records, email counts, and visits.
+
+- **🧹 Expired Email Cleanup**: Filter and batch-delete expired messages by retention days, with optional daily automatic cleanup.
+
+- **📬 All-Mailbox Views**: Inbox and Sent can show all mailboxes for the current user in one aggregated view.
+
+- **🌐 Auth Domain Display**: Configure the domains shown on login/register pages without changing mail delivery, registration validation, or permission rules.
+
+- **🧭 Sidebar Control**: Control sidebar menu visibility from system settings, with the Debug entry hidden by default and enabled on demand.
+
+- **🩺 Debug Diagnostics**: Check deployment config, current user state, random email, share APIs, cache, and frontend resources to diagnose blank-screen and deployment issues.
+
 ## Project Showcase
 
 - [Live Demo](https://skymail.ink)<br>

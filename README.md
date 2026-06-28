@@ -5,34 +5,30 @@
     <p align="center">
         简体中文 | <a href="/README-en.md" style="margin-left: 5px">English </a>
     </p>
-    <p align="center">
-        <a href="https://github.com/maillab/cloud-mail/tree/main?tab=MIT-1-ov-file" target="_blank" >
-            <img src="https://img.shields.io/badge/license-MIT-green" />
-        </a>    
-        <a href="https://github.com/maillab/cloud-mail/releases" target="_blank" >
-            <img src="https://img.shields.io/github/v/release/maillab/cloud-mail" alt="releases" />
-        </a>  
-        <a href="https://github.com/maillab/cloud-mail/issues" >
-            <img src="https://img.shields.io/github/issues/maillab/cloud-mail" alt="issues" />
-        </a>  
-        <a href="https://github.com/maillab/cloud-mail/stargazers" target="_blank">
-            <img src="https://img.shields.io/github/stars/maillab/cloud-mail" alt="stargazers" />
-        </a>  
-        <a href="https://github.com/maillab/cloud-mail/forks" target="_blank" >
-            <img src="https://img.shields.io/github/forks/maillab/cloud-mail" alt="forks" />
-        </a>
-    </p>
-    <p align="center">
-        <a href="https://trendshift.io/repositories/20459" target="_blank" >
-            <img src="https://trendshift.io/api/badge/repositories/20459" alt="trendshift" >
-        </a>
-    </p>
 </p>
 
 
 ## 项目简介
 
-只需要一个域名，就可以创建多个不同的邮箱，类似各大邮箱平台，本项目支持署到 Cloudflare Workers ，降低服务器成本，搭建自己的邮箱服务
+只需要一个域名，就可以创建多个不同的邮箱，类似各大邮箱平台，本项目支持部署到 Cloudflare Workers ，降低服务器成本，搭建自己的邮箱服务。
+
+本分支在原版基础上增加了随机邮箱、邮件分享、过期邮件清理、全部邮箱聚合、登录域名展示、侧边栏控制和部署诊断等增强功能，适合需要临时收件、公开分享邮件和后台精细管理的使用场景。
+
+## 二开增强功能
+
+- **🎲 随机邮箱**：支持按域名、长度、字符模式和角色配额生成随机地址，随机收件箱只读查看。
+
+- **🔗 邮件分享**：支持为注册邮箱或随机地址生成公开分享链接，并在后台管理分享记录、邮件数量和访问次数。
+
+- **🧹 过期邮件清理**：管理员可按天数筛选并批量删除过期邮件，也可开启每日自动清理。
+
+- **📬 全部邮箱聚合**：收件箱和发件箱支持全部邮箱视图，便于集中查看当前用户的邮件。
+
+- **🌐 登录域名展示**：登录/注册页可单独配置展示域名，不影响实际收发、注册校验和权限控制。
+
+- **🧭 侧边栏控制**：系统设置中可控制菜单显示，调试入口默认隐藏并可按需开启。
+
+- **🩺 调试诊断**：提供部署配置、当前用户、随机邮箱、分享接口、缓存和前端资源状态检查，便于排查白屏和部署问题。
 
 ## 功能介绍
 
