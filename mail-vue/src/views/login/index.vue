@@ -15,7 +15,7 @@
         <span class="form-desc" v-else>{{ $t('regTitle') }}</span>
         <form v-show="show === 'login'" autocomplete="on" @submit.prevent="submit">
           <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="form.email"
-                    id="login-email" name="username" type="text" :placeholder="$t('emailAccount')" autocomplete="username">
+                    id="login-email" name="username" type="text" :placeholder="$t('emailAccount')" autocomplete="username" @keyup.enter="submit">
             <template #append v-if="!hideLoginDomain">
               <div @click.stop="openSelect">
                 <el-select
@@ -39,7 +39,7 @@
               </div>
             </template>
           </el-input>
-          <el-input v-model="form.password" id="login-password" name="password" :placeholder="$t('password')" type="password" autocomplete="current-password">
+          <el-input v-model="form.password" id="login-password" name="password" :placeholder="$t('password')" type="password" autocomplete="current-password" @keyup.enter="submit">
           </el-input>
           <el-button class="btn" type="primary" native-type="submit" :loading="loginLoading"
           >{{ $t('loginBtn') }}
@@ -50,7 +50,7 @@
         </form>
         <form v-show="show !== 'login'" autocomplete="on" @submit.prevent="submitRegister">
           <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="registerForm.email" type="text" :placeholder="$t('emailAccount')"
-                    id="register-email" name="username" autocomplete="username">
+                    id="register-email" name="username" autocomplete="username" @keyup.enter="submitRegister">
             <template #append v-if="!hideLoginDomain">
               <div @click.stop="openSelect">
                 <el-select
@@ -74,13 +74,13 @@
               </div>
             </template>
           </el-input>
-          <el-input v-model="registerForm.password" id="register-password" name="new-password" :placeholder="$t('password')" type="password" autocomplete="new-password"/>
+          <el-input v-model="registerForm.password" id="register-password" name="new-password" :placeholder="$t('password')" type="password" autocomplete="new-password" @keyup.enter="submitRegister"/>
           <el-input v-model="registerForm.confirmPassword" :placeholder="$t('confirmPwd')" type="password"
-                    id="register-confirm-password" name="confirm-password" autocomplete="new-password"/>
+                    id="register-confirm-password" name="confirm-password" autocomplete="new-password" @keyup.enter="submitRegister"/>
           <el-input v-if="settingStore.settings.regKey === 0" v-model="registerForm.code" :placeholder="$t('regKey')"
-                    type="text" autocomplete="off"/>
+                    type="text" autocomplete="off" @keyup.enter="submitRegister"/>
           <el-input v-if="settingStore.settings.regKey === 2" v-model="registerForm.code"
-                    :placeholder="$t('regKeyOptional')" type="text" autocomplete="off"/>
+                    :placeholder="$t('regKeyOptional')" type="text" autocomplete="off" @keyup.enter="submitRegister"/>
           <div v-show="verifyShow"
                class="register-turnstile"
                :data-sitekey="settingStore.settings.siteKey"
@@ -108,7 +108,7 @@
     </div>
     <el-dialog class="bind-dialog" v-model="showBindForm"  title="注册邮箱" >
       <div class="bind-container">
-        <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="bindForm.email" id="bind-email" name="username" type="text" :placeholder="$t('emailAccount')" autocomplete="username">
+        <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="bindForm.email" id="bind-email" name="username" type="text" :placeholder="$t('emailAccount')" autocomplete="username" @keyup.enter="bind">
           <template #append v-if="!hideLoginDomain">
             <div @click.stop="openSelect">
               <el-select
@@ -132,9 +132,9 @@
           </template>
         </el-input>
         <el-input v-if="settingStore.settings.regKey === 0" v-model="bindForm.code" :placeholder="$t('regKey')"
-                  type="text" autocomplete="off"/>
+                  type="text" autocomplete="off" @keyup.enter="bind"/>
         <el-input v-if="settingStore.settings.regKey === 2" v-model="bindForm.code"
-                  :placeholder="$t('regKeyOptional')" type="text" autocomplete="off"/>
+                  :placeholder="$t('regKeyOptional')" type="text" autocomplete="off" @keyup.enter="bind"/>
         <el-button class="btn" type="primary" @click="bind" :loading="bindLoading"
         >绑定
         </el-button>
@@ -321,6 +321,8 @@ async function linuxDoGetUser() {
 
 function bind() {
 
+  if (bindLoading.value) return
+
   if (!bindForm.email) {
     ElMessage({
       message: t('emptyEmailMsg'),
@@ -377,6 +379,8 @@ function bind() {
 }
 
 const submit = () => {
+
+  if (loginLoading.value) return
 
   if (!form.email) {
     ElMessage({
@@ -450,6 +454,8 @@ function refreshWebsiteConfig() {
 
 
 function submitRegister() {
+
+  if (registerLoading.value) return
 
   if (!registerForm.email) {
     ElMessage({
@@ -743,6 +749,7 @@ function submitRegister() {
   width: 100px;
   opacity: 0;
   pointer-events: none;
+  visibility: hidden;
 }
 
 .custom-style {

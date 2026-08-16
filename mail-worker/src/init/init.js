@@ -36,7 +36,6 @@ const dbInit = {
 		await settingService.refresh(c);
 		return c.text('success');
 	},
-
 	async v3_4DB(c) {
 		try {
 			await this.ensureEmailShareLinkSchema(c);
@@ -206,6 +205,11 @@ const dbInit = {
 	},
 
 	async v3_1DB(c) {
+		try {
+			await c.env.db.prepare(`ALTER TABLE setting ADD COLUMN sync_delete INTEGER NOT NULL DEFAULT 0;`).run();
+		} catch (e) {
+			console.warn(`跳过字段：${e.message}`);
+		}
 		try {
 			await c.env.db.prepare(`ALTER TABLE setting ADD COLUMN login_darken_factor INTEGER NOT NULL DEFAULT 0;`).run();
 		} catch (e) {

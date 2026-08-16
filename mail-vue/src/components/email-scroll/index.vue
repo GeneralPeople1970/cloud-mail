@@ -49,7 +49,9 @@
                  :style="item.rightChecked ? 'background: #FDF6EC' : ''"
             >
               <el-checkbox v-if="showCheckbox" :class=" props.type === 'all-email' ? 'all-email-checkbox' : 'checkbox'"
-                           v-model="item.checked" @click.stop></el-checkbox>
+                           v-model="item.checked"
+                           :disabled="!item.checked && isSelectMax"
+                           @click.stop></el-checkbox>
               <div v-else class="checkbox-placeholder"></div>
               <div @click.stop="starChange(item)" class="pc-star" v-if="showStar">
                 <Icon v-if="item.isStar" icon="fluent-color:star-16" width="20" height="20"/>
@@ -335,7 +337,9 @@ const dropdownRef = ref(null);
 const dropdownCloseLock = ref(false);
 const dropdownShow = ref(false);
 const rightClickEmail = ref({});
+const MAX_SELECT_COUNT = 95;
 const checkedEmailCount = ref(0);
+const isSelectMax = computed(() => checkedEmailCount.value >= MAX_SELECT_COUNT);
 let timer = null
 const position = ref(
     DOMRect.fromRect({
@@ -782,7 +786,19 @@ function addItem(email) {
 }
 
 function handleCheckAllChange(val) {
-  emailList.forEach(item => item.checked = val);
+  if (val) {
+    let count = 0;
+    emailList.forEach(item => {
+      if (count < MAX_SELECT_COUNT) {
+        item.checked = true;
+        count++;
+      } else {
+        item.checked = false;
+      }
+    });
+  } else {
+    emailList.forEach(item => item.checked = false);
+  }
   isIndeterminate.value = false;
   emitSelectionChange();
 }
@@ -803,8 +819,9 @@ function getSelectedDraftsIds() {
 function updateCheckStatus() {
   const checkedCount = emailList.filter(item => item.checked).length;
   checkedEmailCount.value = checkedCount;
-  checkAll.value = checkedCount === emailList.length;
-  isIndeterminate.value = checkedCount > 0 && checkedCount < emailList.length;
+  const atMax = checkedCount >= MAX_SELECT_COUNT;
+  checkAll.value = emailList.length > 0 && (checkedCount === emailList.length || atMax);
+  isIndeterminate.value = checkedCount > 0 && !checkAll.value;
   emitSelectionChange();
 }
 

@@ -61,7 +61,7 @@ function jumpContent(email) {
   emailStore.contentData.showDelete = true
   emailStore.contentData.showStar = true
   emailStore.contentData.showReply = true
-  router.push('/message')
+  router.push('/mail')
 }
 
 function addStar(email) {

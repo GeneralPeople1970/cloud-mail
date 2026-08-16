@@ -53,6 +53,7 @@ export const setting = sqliteTable('setting', {
 	blackFrom: text('black_from').default('').notNull(),
 	aiCode: integer('ai_code').default(1).notNull(),
 	aiCodeFilter: text('ai_code_filter').default('').notNull(),
+	syncDelete: integer('sync_delete').default(1).notNull(),
 	randomEmailSubdomains: text('random_email_subdomains').default('').notNull(),
 	randomEmailLength: integer('random_email_length').default(10).notNull(),
 	randomEmailMode: text('random_email_mode').default('letters,numbers').notNull(),
