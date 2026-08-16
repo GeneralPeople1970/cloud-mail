@@ -34,9 +34,18 @@ const emailService = {
 		timeSort = Number(timeSort);
 		accountId = Number(accountId);
 		allReceive = Number(allReceive);
+		type = Number(type);
+
+		if (isNaN(type)) {
+			type = emailConst.type.RECEIVE;
+		}
 
 		if (size > 50) {
 			size = 50;
+		}
+
+		if (!accountId) {
+			allReceive = 1;
 		}
 
 		if (!emailId) {
@@ -716,6 +725,16 @@ const emailService = {
 	async latest(c, params, userId) {
 		let { emailId, accountId, allReceive } = params;
 		allReceive = Number(allReceive);
+		emailId = Number(emailId);
+		accountId = Number(accountId);
+
+		if (!emailId || isNaN(emailId)) {
+			emailId = 9999999999;
+		}
+
+		if (!accountId) {
+			allReceive = 1;
+		}
 
 		if (isNaN(allReceive)) {
 			let accountRow = await accountService.selectById(c, accountId);

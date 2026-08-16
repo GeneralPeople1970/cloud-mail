@@ -35,7 +35,12 @@ const attService = {
 	},
 
 	list(c, params, userId) {
-		const { emailId } = params;
+		let { emailId } = params;
+		emailId = Number(emailId);
+
+		if (!emailId || isNaN(emailId)) {
+			return [];
+		}
 
 		return orm(c).select().from(att).where(
 			and(
