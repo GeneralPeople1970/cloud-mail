@@ -64,7 +64,7 @@ function changeTimeSort() {
 }
 
 function jumpContent(email) {
-  emailStore.contentData.email = email
+  emailStore.contentData.email = emailStore.toContentEmail(email)
   emailStore.contentData.delType = 'logic'
   emailStore.contentData.showDelete = true
   emailStore.contentData.showUnread = true
@@ -142,7 +142,9 @@ function cancelStar(email) {
 function getEmailList(emailId, size) {
   const accountId =  accountStore.currentAccountId;
   const allReceive = getAllReceive();
-  return emailList(accountId, allReceive, emailId, params.timeSort, size, 0).then(data => {
+  return emailStore.fetchList(full =>
+    emailList(accountId, allReceive, emailId, params.timeSort, size, 0, full)
+  ).then(data => {
     data.latestEmail.reqAccountId = accountId;
     data.latestEmail.allReceive = allReceive;
     return data;

@@ -40,13 +40,12 @@
                         :key="keyCount"
         >
           <template #default="{ data: item, index }" >
-            <div :class="'email-row ' + props.type"
+            <div :class="['email-row', props.type, { 'right-checked': item.rightChecked }]"
                  :data-checked="item.checked"
                  @click="jumpDetails(item)"
                  v-if="!item.expand"
                  :key="item.emailId"
                  @contextmenu="handleContextmenu($event, item)"
-                 :style="item.rightChecked ? 'background: #FDF6EC' : ''"
             >
               <el-checkbox v-if="showCheckbox" :class=" props.type === 'all-email' ? 'all-email-checkbox' : 'checkbox'"
                            v-model="item.checked"
@@ -94,7 +93,7 @@
                         </slot>
                       </span>
                     </span>
-                    <span class="email-content">{{ item.formatText || '\u200B' }}</span>
+                    <span class="email-content">{{ item.previewText || item.text || '\u200B' }}</span>
                   </div>
                   <div class="user-info" v-if="showUserInfo">
                     <div class="user">
@@ -567,34 +566,42 @@ const accountShow = computed(() => {
   return uiStore.accountShow && settingStore.settings.manyEmail === 0
 })
 
-function htmlToText(email) {
-  if (email.content) {
+const INVISIBLE_CHAR_RE = new RegExp(
+    '[' + [0x200b, 0x200c, 0x200d, 0x200e, 0x200f, 0xfeff, 0x034f, 0x00a0, 0x3000, 0x00ad]
+        .map(code => String.fromCharCode(code)).join('') + ']',
+    'g'
+)
 
-    const tempDiv = document.createElement('div');
-
-    tempDiv.innerHTML = email.content.replace(
-        /<(img|iframe|object|embed|video|audio|source|link)[^>]*>/gi, ''
-    );
-
-    const scriptsAndStyles = tempDiv.querySelectorAll('script, style, title');
-    scriptsAndStyles.forEach(el => el.remove());
-    let text = tempDiv.textContent || tempDiv.innerText || '';
-    text = text.replace(/\s+/g, ' ').trim();
-    return cleanSpace(text)
-  }
+/*
+ * 上游列表接口已在服务端生成 text 摘要（brief 列）。
+ * 但 fork 自有的列表接口（随机邮箱 / 过期邮件）返回完整邮件行，
+ * 纯 HTML 邮件的 text 为空，这里按需在前端兜底生成预览文本。
+ */
+function listPreview(email) {
 
   if (email.text) {
     return cleanSpace(email.text)
-  } else {
+  }
+
+  if (!email.content) {
     return ''
   }
 
+  const tempDiv = document.createElement('div');
+
+  tempDiv.innerHTML = email.content.replace(
+      /<(img|iframe|object|embed|video|audio|source|link)[^>]*>/gi, ''
+  );
+
+  tempDiv.querySelectorAll('script, style, title').forEach(el => el.remove());
+
+  return cleanSpace(tempDiv.textContent || tempDiv.innerText || '')
 }
 
 function cleanSpace(text) {
   return text
-      .replace(/[\u200B-\u200F\uFEFF\u034F\u200B-\u200F\u00A0\u3000\u00AD]/g, '')// 移除零宽空格
-      .replace(/\s+/g, ' ')                   // 多空白合并成一个空格
+      .replace(INVISIBLE_CHAR_RE, '')   // 移除零宽/不可见空白字符
+      .replace(/\s+/g, ' ')             // 多空白合并成一个空格
       .trim();
 }
 
@@ -747,7 +754,7 @@ function addItem(email) {
     return false;
   }
 
-  email.formatText = htmlToText(email);
+  email.previewText = listPreview(email)
   email.formatCreateTime = fromNow(email.formatCreateTime);
 
   if (props.timeSort) {
@@ -911,7 +918,7 @@ function getEmailList(refresh = false) {
 
 function handleList(list) {
   list.forEach(email => {
-    email.formatText = htmlToText(email)
+    email.previewText = listPreview(email)
     email.formatCreateTime = fromNow(email.createTime);
     email.test = t('received')
     const statusIconMap = {
@@ -1280,6 +1287,11 @@ function loadData() {
   &:hover {
     background-color: var(--email-hover-background);
     z-index: 0;
+  }
+
+  &.right-checked,
+  &.right-checked:hover {
+    background-color: var(--email-right-click-background);
   }
 
   /*&[data-checked="true"] {

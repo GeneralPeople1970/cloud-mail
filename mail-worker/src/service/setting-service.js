@@ -70,18 +70,7 @@ const settingService = {
 		domainList = domainList.map(item => '@' + item);
 		setting.domainList = domainList;
 
-
-		let linuxdoSwitch = c.env.linuxdo_switch;
 		let projectLink = c.env.project_link;
-
-		if (typeof linuxdoSwitch === 'string' && linuxdoSwitch === 'true') {
-			linuxdoSwitch = true
-		} else if (linuxdoSwitch === true) {
-			linuxdoSwitch = true
-		} else {
-			linuxdoSwitch = false
-		}
-
 		if (typeof projectLink === 'string' && projectLink === 'false') {
 			projectLink = false
 		} else if (projectLink === false) {
@@ -102,10 +91,6 @@ const settingService = {
 		setting.expiredEmailAutoDelete = Number(setting.expiredEmailAutoDelete) === 1 ? 1 : 0;
 		setting.expiredEmailDays = this.normalizeExpiredEmailDays(setting.expiredEmailDays);
 		setting.sidebarMenuConfig = this.normalizeSidebarMenuConfig(setting.sidebarMenuConfig);
-
-		setting.linuxdoClientId = c.env.linuxdo_client_id;
-		setting.linuxdoCallbackUrl = c.env.linuxdo_callback_url;
-		setting.linuxdoSwitch = linuxdoSwitch;
 
 		setting.emailPrefixFilter = setting.emailPrefixFilter.split(",").filter(Boolean);
 
@@ -224,6 +209,7 @@ const settingService = {
 		}
 
 		params.resendTokens = JSON.stringify(resendTokens);
+
 		await orm(c).update(setting).set({ ...params }).returning().get();
 		await this.refresh(c);
 	},
@@ -321,8 +307,11 @@ const settingService = {
 			notice: settingRow.notice,
 			loginDomain: settingRow.loginDomain,
 			linuxdoClientId: settingRow.linuxdoClientId,
-			linuxdoCallbackUrl: settingRow.linuxdoCallbackUrl,
 			linuxdoSwitch: settingRow.linuxdoSwitch,
+			githubClientId: settingRow.githubClientId,
+			githubSwitch: settingRow.githubSwitch,
+			googleClientId: settingRow.googleClientId,
+			googleSwitch: settingRow.googleSwitch,
 			minEmailPrefix: settingRow.minEmailPrefix,
 			randomEmailSubdomains: settingRow.randomEmailSubdomains,
 			randomEmailLength: settingRow.randomEmailLength,

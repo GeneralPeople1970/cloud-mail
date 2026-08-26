@@ -52,8 +52,8 @@ export const setting = sqliteTable('setting', {
 	blackContent: text('black_content').default('').notNull(),
 	blackFrom: text('black_from').default('').notNull(),
 	aiCode: integer('ai_code').default(1).notNull(),
-	aiCodeFilter: text('ai_code_filter').default('').notNull(),
 	syncDelete: integer('sync_delete').default(1).notNull(),
+	aiCodeFilter: text('ai_code_filter').default('').notNull(),
 	randomEmailSubdomains: text('random_email_subdomains').default('').notNull(),
 	randomEmailLength: integer('random_email_length').default(10).notNull(),
 	randomEmailMode: text('random_email_mode').default('letters,numbers').notNull(),
@@ -64,6 +64,17 @@ export const setting = sqliteTable('setting', {
 	authDomainList: text('auth_domain_list').default('').notNull(),
 	expiredEmailAutoDelete: integer('expired_email_auto_delete').default(0).notNull(),
 	expiredEmailDays: integer('expired_email_days').default(30).notNull(),
-	sidebarMenuConfig: text('sidebar_menu_config').default('').notNull()
+	sidebarMenuConfig: text('sidebar_menu_config').default('').notNull(),
+	linuxdoClientId: text('linuxdo_client_id').default('').notNull(),
+	linuxdoClientSecret: text('linuxdo_client_secret').default('').notNull(),
+	linuxdoSwitch: integer('linuxdo_switch').default(1).notNull(),
+	githubClientId: text('github_client_id').default('').notNull(),
+	githubClientSecret: text('github_client_secret').default('').notNull(),
+	githubSwitch: integer('github_switch').default(1).notNull(),
+	googleClientId: text('google_client_id').default('').notNull(),
+	googleClientSecret: text('google_client_secret').default('').notNull(),
+	googleSwitch: integer('google_switch').default(1).notNull(),
+	autoCleanDays: integer('auto_clean_days').default(0).notNull(),
+	autoCleanExclude: text('auto_clean_exclude').default('').notNull()
 });
 export default setting

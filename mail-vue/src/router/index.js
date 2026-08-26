@@ -145,16 +145,16 @@ router.beforeEach((to, from, next) => {
 
     const token = localStorage.getItem('token')
 
-    if (!token && !['login', 'share'].includes(to.name)) {
+    if (!token && !to.path.startsWith('/login') && to.name !== 'share') {
         return next({name: 'login'})
     }
 
-    if (!token && to.name === 'login') {
+    if (!token && to.path.startsWith('/login')) {
         loadBackground(next)
         return
     }
 
-    if (token && to.name === 'login') {
+    if (token && to.path.startsWith('/login')) {
         return next(from.path)
     }
 
