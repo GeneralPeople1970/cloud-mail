@@ -14,8 +14,6 @@ export const useSettingStore = defineStore('setting', {
             randomEmailDomainList: '',
             randomEmailAvailableDomainList: [],
             debug: 0,
-            expiredEmailAutoDelete: 0,
-            expiredEmailDays: 30,
             sidebarMenuConfig: '',
             authDomainSource: 'cloudflare',
             authDomainList: '',

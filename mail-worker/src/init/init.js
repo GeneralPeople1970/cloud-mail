@@ -183,8 +183,6 @@ const dbInit = {
 			await this.addColumnIfMissing(c, 'setting', 'debug', `ALTER TABLE setting ADD COLUMN debug INTEGER NOT NULL DEFAULT 0;`);
 			await this.addColumnIfMissing(c, 'setting', 'auth_domain_source', `ALTER TABLE setting ADD COLUMN auth_domain_source TEXT NOT NULL DEFAULT 'cloudflare';`);
 			await this.addColumnIfMissing(c, 'setting', 'auth_domain_list', `ALTER TABLE setting ADD COLUMN auth_domain_list TEXT NOT NULL DEFAULT '';`);
-			await this.addColumnIfMissing(c, 'setting', 'expired_email_auto_delete', `ALTER TABLE setting ADD COLUMN expired_email_auto_delete INTEGER NOT NULL DEFAULT 0;`);
-			await this.addColumnIfMissing(c, 'setting', 'expired_email_days', `ALTER TABLE setting ADD COLUMN expired_email_days INTEGER NOT NULL DEFAULT 30;`);
 			await this.addColumnIfMissing(c, 'setting', 'sidebar_menu_config', `ALTER TABLE setting ADD COLUMN sidebar_menu_config TEXT NOT NULL DEFAULT '';`);
 		} catch (e) {
 			console.warn(`跳过字段添加：${e.message}`);

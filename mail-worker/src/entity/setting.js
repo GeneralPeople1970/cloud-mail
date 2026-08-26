@@ -62,8 +62,6 @@ export const setting = sqliteTable('setting', {
 	debug: integer('debug').default(0).notNull(),
 	authDomainSource: text('auth_domain_source').default('cloudflare').notNull(),
 	authDomainList: text('auth_domain_list').default('').notNull(),
-	expiredEmailAutoDelete: integer('expired_email_auto_delete').default(0).notNull(),
-	expiredEmailDays: integer('expired_email_days').default(30).notNull(),
 	sidebarMenuConfig: text('sidebar_menu_config').default('').notNull(),
 	linuxdoClientId: text('linuxdo_client_id').default('').notNull(),
 	linuxdoClientSecret: text('linuxdo_client_secret').default('').notNull(),

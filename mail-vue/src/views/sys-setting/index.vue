@@ -1347,8 +1347,6 @@ function normalizeSettingData(settingData = {}) {
   data.randomEmailDomainList = normalizeDomainList(data.randomEmailDomainList, data.domainList).join(',')
   data.randomEmailAvailableDomainList = Array.isArray(data.randomEmailAvailableDomainList) ? data.randomEmailAvailableDomainList : data.domainList
   data.debug = Number(data.debug) === 1 ? 1 : 0
-  data.expiredEmailAutoDelete = Number(data.expiredEmailAutoDelete) === 1 ? 1 : 0
-  data.expiredEmailDays = normalizeExpiredEmailDays(data.expiredEmailDays)
   data.sidebarMenuConfig = normalizeSidebarMenuConfig(data.sidebarMenuConfig).join(',')
   data.authDomainSource = data.authDomainSource === 'custom' ? 'custom' : 'cloudflare'
   data.authDomainList = normalizeAuthDomainList(data.authDomainList, data.domainList).join(',')
@@ -1407,12 +1405,6 @@ function normalizeSidebarMenuConfig(value) {
       .filter(item => allowed.has(item))
   const unique = Array.from(new Set(selected))
   return unique.length ? unique : [...defaultSidebarMenus]
-}
-
-function normalizeExpiredEmailDays(value) {
-  const days = Number(value)
-  if (!days || Number.isNaN(days) || days < 1) return 30
-  return Math.min(3650, Math.floor(days))
 }
 
 function randomControlWidth(width) {

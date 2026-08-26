@@ -10,7 +10,6 @@ const zh = {
     allMail: '全部邮件',
     expiredEmail: '过期邮件',
     sidebarControl: '侧边栏控制',
-    expiredEmailAutoDelete: '自动删除',
     expiredEmailSevenDays: '7 天',
     expiredEmailFourteenDays: '14 天',
     expiredEmailThirtyDays: '30 天',

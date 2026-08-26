@@ -88,8 +88,6 @@ const settingService = {
 		setting.debug ??= 0;
 		setting.authDomainSource = this.normalizeAuthDomainSource(setting.authDomainSource);
 		setting.authDomainList = this.normalizeAuthDomainList(setting.authDomainList, domainList).join(',');
-		setting.expiredEmailAutoDelete = Number(setting.expiredEmailAutoDelete) === 1 ? 1 : 0;
-		setting.expiredEmailDays = this.normalizeExpiredEmailDays(setting.expiredEmailDays);
 		setting.sidebarMenuConfig = this.normalizeSidebarMenuConfig(setting.sidebarMenuConfig);
 
 		setting.emailPrefixFilter = setting.emailPrefixFilter.split(",").filter(Boolean);
@@ -193,14 +191,6 @@ const settingService = {
 
 		if (params.authDomainList !== undefined) {
 			params.authDomainList = this.normalizeAuthDomainList(params.authDomainList, settingData.domainList).join(',');
-		}
-
-		if (params.expiredEmailAutoDelete !== undefined) {
-			params.expiredEmailAutoDelete = Number(params.expiredEmailAutoDelete) === 1 ? 1 : 0;
-		}
-
-		if (params.expiredEmailDays !== undefined) {
-			params.expiredEmailDays = this.normalizeExpiredEmailDays(params.expiredEmailDays);
 		}
 
 		if (params.sidebarMenuConfig !== undefined) {
@@ -320,8 +310,6 @@ const settingService = {
 			randomEmailDomainList: this.normalizeDomainList(settingRow.randomEmailDomainList, visibleDomainList).join(','),
 			randomEmailAvailableDomainList: randomEmailDomainList,
 			debug: settingRow.debug,
-			expiredEmailAutoDelete: settingRow.expiredEmailAutoDelete,
-			expiredEmailDays: settingRow.expiredEmailDays,
 			sidebarMenuConfig: this.normalizeSidebarMenuConfig(settingRow.sidebarMenuConfig),
 			projectLink: settingRow.projectLink
 		};
@@ -339,14 +327,6 @@ const settingService = {
 			.filter(item => allowed.has(item));
 		const unique = Array.from(new Set(selected));
 		return (unique.length ? unique : DEFAULT_SIDEBAR_MENUS).join(',');
-	},
-
-	normalizeExpiredEmailDays(value) {
-		const days = Number(value);
-		if (!days || Number.isNaN(days) || days < 1) {
-			return 30;
-		}
-		return Math.min(3650, Math.floor(days));
 	},
 
 	normalizeRandomEmailMode(value) {

@@ -10,7 +10,6 @@ const en = {
     allMail: 'All Mail',
     expiredEmail: 'Expired Mail',
     sidebarControl: 'Sidebar Control',
-    expiredEmailAutoDelete: 'Auto Delete',
     expiredEmailSevenDays: '7 days',
     expiredEmailFourteenDays: '14 days',
     expiredEmailThirtyDays: '30 days',

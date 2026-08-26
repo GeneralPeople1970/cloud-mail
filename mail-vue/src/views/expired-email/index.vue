@@ -91,19 +91,6 @@
             height="22"
             @click="deleteCurrentExpired"
         />
-        <div class="auto-delete-control">
-          <span>{{ $t('expiredEmailAutoDelete') }}</span>
-          <el-switch
-              v-model="autoDelete"
-              :active-value="1"
-              :inactive-value="0"
-              size="small"
-              @change="saveExpiredSetting"
-          />
-          <el-button size="small" type="primary" :loading="settingLoading" @click="saveExpiredSetting">
-            {{ $t('save') }}
-          </el-button>
-        </div>
       </template>
     </emailScroll>
   </div>
@@ -115,11 +102,9 @@ import {Icon} from "@iconify/vue";
 import router from "@/router/index.js";
 import emailScroll from "@/components/email-scroll/index.vue";
 import {useEmailStore} from "@/store/email.js";
-import {useSettingStore} from "@/store/setting.js";
 import {useI18n} from "vue-i18n";
 import {starAdd, starCancel} from "@/request/star.js";
 import {expiredEmailBatchDelete, expiredEmailDelete, expiredEmailList} from "@/request/expired-email.js";
-import {settingSet} from "@/request/setting.js";
 
 defineOptions({
   name: 'expired-email'
@@ -127,17 +112,12 @@ defineOptions({
 
 const {t} = useI18n()
 const emailStore = useEmailStore()
-const settingStore = useSettingStore()
 const expiredEmailScroll = ref({})
 const searchValue = ref('')
 const mySelect = ref()
 const selectedEmailCount = ref(0)
-const settingLoading = ref(false)
-const autoDelete = ref(Number(settingStore.settings.expiredEmailAutoDelete) === 1 ? 1 : 0)
-const customDays = ref(normalizeDays(settingStore.settings.expiredEmailDays))
-const dayType = ref(['7', '14', '30'].includes(String(settingStore.settings.expiredEmailDays))
-    ? String(settingStore.settings.expiredEmailDays)
-    : 'custom')
+const customDays = ref(30)
+const dayType = ref('30')
 
 const params = reactive({
   timeSort: 0,
@@ -266,24 +246,6 @@ function deleteCurrentExpired() {
     })
   })
 }
-
-function saveExpiredSetting() {
-  settingLoading.value = true
-  const form = {
-    expiredEmailAutoDelete: autoDelete.value,
-    expiredEmailDays: currentDays.value
-  }
-  settingSet(form).then(() => {
-    settingStore.settings = {...settingStore.settings, ...form}
-    ElMessage({
-      message: t('saveSuccessMsg'),
-      type: 'success',
-      plain: true
-    })
-  }).finally(() => {
-    settingLoading.value = false
-  })
-}
 </script>
 
 <style scoped lang="scss">
@@ -330,15 +292,6 @@ function saveExpiredSetting() {
 
 .icon {
   cursor: pointer;
-}
-
-.auto-delete-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--el-text-color-primary);
-  white-space: nowrap;
-  font-size: 13px;
 }
 
 :deep(.el-select__wrapper) {

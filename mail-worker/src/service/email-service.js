@@ -1029,31 +1029,30 @@ const emailService = {
 
 	async expiredBatchDelete(c, params) {
 		const conditions = this.expiredEmailConditions(params);
-		const emailIdsRow = await orm(c).select({ emailId: email.emailId }).from(email)
-			.leftJoin(user, eq(email.userId, user.userId))
-			.where(and(...conditions))
-			.all();
-		const emailIds = emailIdsRow.map(row => row.emailId);
+		// 与上游 autoClean 一致，分批删除，避免单条语句绑定参数过多
+		const batchSize = 95;
+		let total = 0;
 
-		if (emailIds.length === 0) {
-			return { total: 0 };
+		while (true) {
+			const rows = await orm(c).select({ emailId: email.emailId }).from(email)
+				.leftJoin(user, eq(email.userId, user.userId))
+				.where(and(...conditions))
+				.limit(batchSize)
+				.all();
+
+			if (!rows.length) {
+				break;
+			}
+
+			await this.physicsDelete(c, { emailIds: rows.map(row => row.emailId).join(',') });
+			total += rows.length;
+
+			if (rows.length < batchSize) {
+				break;
+			}
 		}
 
-		await attService.removeByEmailIds(c, emailIds);
-		await starService.removeByEmailIds(c, emailIds);
-		await orm(c).delete(email).where(inArray(email.emailId, emailIds)).run();
-		return { total: emailIds.length };
-	},
-
-	async autoDeleteExpired(c) {
-		const settings = await settingService.query(c);
-		if (Number(settings.expiredEmailAutoDelete) !== 1) {
-			return { total: 0 };
-		}
-		return this.expiredBatchDelete(c, {
-			days: settings.expiredEmailDays,
-			type: 'all',
-		});
+		return { total };
 	},
 
 	expiredEmailConditions(params) {
