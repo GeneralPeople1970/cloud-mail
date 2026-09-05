@@ -12,6 +12,7 @@ import {t} from '../i18n/i18n'
 import verifyRecordService from './verify-record-service';
 import JwtUtils from '../utils/jwt-utils';
 import {eq} from 'drizzle-orm';
+import domainUtils from '../utils/domain-uitls';
 
 const DEFAULT_SIDEBAR_MENUS = [
 	'inbox',
@@ -196,6 +197,10 @@ const settingService = {
 		if (params.sidebarMenuConfig !== undefined) {
 			params.sidebarMenuConfig = this.normalizeSidebarMenuConfig(params.sidebarMenuConfig);
 			params.debug = params.sidebarMenuConfig.split(',').includes('debug') ? 1 : 0;
+		}
+
+		if (params.webhookUrl !== undefined) {
+			params.webhookUrl = domainUtils.toOssDomain(params.webhookUrl) || '';
 		}
 
 		params.resendTokens = JSON.stringify(resendTokens);
