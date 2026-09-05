@@ -12,22 +12,6 @@ With only one domain, you can create multiple different email addresses, similar
 
 This fork adds random email generation, public email sharing, expired email cleanup, all-mailbox aggregation, auth-page domain display, sidebar visibility control, and deployment diagnostics for temporary receiving, public sharing, and more detailed admin management.
 
-## Fork Enhancements
-
-- **🎲 Random Email**: Generate random addresses by domain, length, character mode, and role quota, with a read-only random inbox.
-
-- **🔗 Email Sharing**: Create public share links for registered accounts or random addresses, and manage share records, email counts, and visits.
-
-- **🧹 Expired Email Cleanup**: Filter and batch-delete expired messages by retention days, with optional daily automatic cleanup.
-
-- **📬 All-Mailbox Views**: Inbox and Sent can show all mailboxes for the current user in one aggregated view.
-
-- **🌐 Auth Domain Display**: Configure the domains shown on login/register pages without changing mail delivery, registration validation, or permission rules.
-
-- **🧭 Sidebar Control**: Control sidebar menu visibility from system settings, with the Debug entry hidden by default and enabled on demand.
-
-- **🩺 Debug Diagnostics**: Check deployment config, current user state, random email, share APIs, cache, and frontend resources to diagnose blank-screen and deployment issues.
-
 ## Project Showcase
 
 - [Live Demo](https://skymail.ink)<br>
@@ -63,6 +47,22 @@ This fork adds random email generation, public email sharing, expired email clea
 - **🤖 CAPTCHA**: Integrated with Turnstile CAPTCHA to prevent automated registration.
 
 - **📜 More Features**: Under development...
+
+## Fork Enhancements
+
+- **🎲 Random Email**: Generate random addresses by domain, length, character mode, and role quota, with a read-only random inbox.
+
+- **🔗 Email Sharing**: Create public share links for registered accounts or random addresses, and manage share records, email counts, and visits.
+
+- **🧹 Expired Email Cleanup**: Filter and batch-delete expired messages by retention days, with optional daily automatic cleanup.
+
+- **📬 All-Mailbox Views**: Inbox and Sent can show all mailboxes for the current user in one aggregated view.
+
+- **🌐 Auth Domain Display**: Configure the domains shown on login/register pages without changing mail delivery, registration validation, or permission rules.
+
+- **🧭 Sidebar Control**: Control sidebar menu visibility from system settings, with the Debug entry hidden by default and enabled on demand.
+
+- **🩺 Debug Diagnostics**: Check deployment config, current user state, random email, share APIs, cache, and frontend resources to diagnose blank-screen and deployment issues.
 
 ## Tech Stack
 
