@@ -32,6 +32,10 @@ export function emailShareCancel(accountId, shareLinkId) {
     return http.post('/emailShare/cancel', {accountId, shareLinkId})
 }
 
+export function emailShareDelete(shareLinkId) {
+    return http.delete('/emailShare/delete', {params: {shareLinkId}})
+}
+
 export function adminEmailShareStatus(accountId) {
     return http.get('/emailShare/admin/status', {params: {accountId}})
 }
@@ -62,6 +66,10 @@ export function adminEmailShareReset(shareLinkId, expireTime) {
 
 export function adminEmailShareCancel(accountId, shareLinkId) {
     return http.post('/emailShare/admin/cancel', {accountId, shareLinkId})
+}
+
+export function adminEmailShareDelete(shareLinkId) {
+    return http.delete('/emailShare/admin/delete', {params: {shareLinkId}})
 }
 
 export function publicEmailShareMeta(token) {

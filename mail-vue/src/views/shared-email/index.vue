@@ -14,6 +14,7 @@
         <Icon v-if="selectedRows.length" class="icon" icon="mdi:calendar-edit-outline" width="20" height="20" @click="openBatchExpire"/>
         <Icon v-if="selectedRows.length" class="icon" icon="material-symbols:restart-alt" width="21" height="21" @click="resetSelected"/>
         <Icon v-if="selectedRows.length" class="icon" icon="material-symbols:link-off" width="21" height="21" @click="cancelSelected"/>
+        <Icon v-if="selectedRows.length" class="icon" icon="uiw:delete" width="16" height="16" @click="deleteSelected"/>
         <Icon class="icon reload-icon" icon="ion:reload" width="18" height="18" @click="loadList"/>
       </div>
     </div>
@@ -83,10 +84,12 @@ import {useI18n} from "vue-i18n";
 import {useUserStore} from "@/store/user.js";
 import {
   adminEmailShareCancel,
+  adminEmailShareDelete,
   adminEmailShareList,
   adminEmailShareReset,
   adminEmailShareUpdate,
   emailShareCancel,
+  emailShareDelete,
   emailShareList,
   emailShareReset,
   emailShareUpdate
@@ -230,6 +233,26 @@ function cancelSelected() {
       plain: true
     })
     loadList()
+  })
+}
+
+function deleteSelected() {
+  ElMessageBox.confirm(t('delShareConfirm'), {
+    confirmButtonText: t('confirm'),
+    cancelButtonText: t('cancel'),
+    type: 'warning'
+  }).then(() => {
+    const rows = [...selectedRows.value]
+    const request = scope.value === 'all' ? adminEmailShareDelete : emailShareDelete
+    Promise.all(rows.map(row => request(row.shareLinkId))).then(() => {
+      rows.forEach(row => localStorage.removeItem(`email-share-url-${row.shareLinkId}`))
+      ElMessage({
+        message: t('shareLinkDeleted'),
+        type: 'success',
+        plain: true
+      })
+      loadList()
+    })
   })
 }
 </script>

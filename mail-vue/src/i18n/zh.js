@@ -228,6 +228,8 @@ const zh = {
     cancelShareLink: '取消共享',
     shareLinkGenerated: '共享链接已生成',
     shareLinkCancelled: '共享链接已取消',
+    shareLinkDeleted: '共享链接已删除',
+    delShareConfirm: '确定删除选中的共享链接吗？删除后对应的共享页面会立即失效。',
     shareLinkExpired: '共享链接已过期',
     shareLinkInvalid: '共享链接不存在或已失效',
     shareLinkOnlyShownAfterGenerate: '出于安全考虑，完整链接只会在生成或重置后显示；如需再次复制请重置链接。',

@@ -38,6 +38,11 @@ app.post('/emailShare/cancel', async (c) => {
 	return c.json(result.ok());
 });
 
+app.delete('/emailShare/delete', async (c) => {
+	await emailShareService.delete(c, c.req.query(), userContext.getUserId(c));
+	return c.json(result.ok());
+});
+
 app.get('/emailShare/admin/status', async (c) => {
 	const data = await emailShareService.adminStatus(c, c.req.query(), userContext.getUserId(c));
 	return c.json(result.ok(data));
@@ -70,6 +75,11 @@ app.post('/emailShare/admin/reset', async (c) => {
 
 app.post('/emailShare/admin/cancel', async (c) => {
 	await emailShareService.adminCancel(c, await c.req.json());
+	return c.json(result.ok());
+});
+
+app.delete('/emailShare/admin/delete', async (c) => {
+	await emailShareService.adminDelete(c, c.req.query());
 	return c.json(result.ok());
 });
 

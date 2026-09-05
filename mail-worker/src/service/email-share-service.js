@@ -48,6 +48,11 @@ const emailShareService = {
 		await this.cancelByShareId(c, share.shareLinkId);
 	},
 
+	async delete(c, params, userId) {
+		const share = await this.assertManageShare(c, params, userId, false);
+		await this.deleteByShareId(c, share.shareLinkId);
+	},
+
 	async list(c, params, userId) {
 		const rows = await orm(c).select().from(emailShareLink)
 			.where(eq(emailShareLink.ownerUserId, userId))
@@ -107,6 +112,12 @@ const emailShareService = {
 	async adminCancel(c, params) {
 		const share = await this.assertManageShare(c, params, null, true);
 		await this.cancelByShareId(c, share.shareLinkId);
+	},
+
+	//管理员可删除任意用户的链接，行删掉后 token 查不到，用户那边的共享页面同时失效
+	async adminDelete(c, params) {
+		const share = await this.assertManageShare(c, params, null, true);
+		await this.deleteByShareId(c, share.shareLinkId);
 	},
 
 	async adminList(c) {
@@ -280,6 +291,11 @@ const emailShareService = {
 			status: SHARE_STATUS.CANCELLED,
 			updateTime: dayjs().toISOString(),
 		}).where(eq(emailShareLink.shareLinkId, shareLinkId)).run();
+	},
+
+	async deleteByShareId(c, shareLinkId) {
+		await orm(c).delete(emailShareVisit).where(eq(emailShareVisit.shareLinkId, shareLinkId)).run();
+		await orm(c).delete(emailShareLink).where(eq(emailShareLink.shareLinkId, shareLinkId)).run();
 	},
 
 	async assertManageShare(c, params, userId, admin) {

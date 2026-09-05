@@ -228,6 +228,8 @@ const en = {
     cancelShareLink: 'Cancel Sharing',
     shareLinkGenerated: 'Share link generated',
     shareLinkCancelled: 'Share link cancelled',
+    shareLinkDeleted: 'Share link deleted',
+    delShareConfirm: 'Confirm deletion of the selected share links? Their share pages stop working immediately.',
     shareLinkExpired: 'Share link expired',
     shareLinkInvalid: 'Share link does not exist or has expired',
     shareLinkOnlyShownAfterGenerate: 'For security, the full link is shown only after generation or reset. Reset it if you need to copy it again.',
