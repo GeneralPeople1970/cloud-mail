@@ -6,6 +6,7 @@
 		"dev": "wrangler dev --config wrangler-dev.toml",
 		"test": "wrangler deploy --config wrangler-test.toml",
 		"deploy": "wrangler deploy",
+		"deploy:builds": "node scripts/deploy-builds.mjs",
 		"start": "wrangler dev"
 	},
 	"devDependencies": {

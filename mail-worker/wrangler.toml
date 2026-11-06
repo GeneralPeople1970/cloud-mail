@@ -6,6 +6,7 @@ keep_vars = true
 [observability]
 enabled = false
 
+# Workers Builds 通过 pnpm run deploy:builds 注入 D1/KV 绑定，见 ../docs/WORKERS_BUILDS.md。
 #[[d1_databases]]
 #binding = "db"			#d1数据库绑定名默认不可修改
 #database_name = ""		#d1数据库名字

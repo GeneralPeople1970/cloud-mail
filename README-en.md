@@ -60,6 +60,8 @@ This fork adds random email generation, public email sharing, expired email clea
 
 - **🩺 Debug Diagnostics**: Check deployment config, current user state, random email, share APIs, cache, and frontend resources to diagnose blank-screen and deployment issues.
 
+- **🔒 Deployment Binding Protection**: Workers Builds injects existing D1/KV bindings from build variables and stops deployment when configuration is missing. Preserve this behavior when merging upstream; see the [deployment and merge guide](docs/WORKERS_BUILDS.md).
+
 ## Tech Stack
 
 - **Platform**: [Cloudflare Workers](https://developers.cloudflare.com/workers/)

@@ -145,6 +145,17 @@ git remote -v
 - 前端构建有意提高了 `chunkSizeWarningLimit`，避免既有大型依赖/应用分块产生噪音警告。
 - 如果出现 Browserslist/caniuse-lite 警告，从 `mail-vue/` 运行 `pnpm dlx update-browserslist-db@latest`，如果锁文件变化则提交该变化。
 
+### Workers Builds 绑定保护（本 fork 保留）
+
+- 2026-11-06 核对上游 `main`（`d115f4c`）：上游 `wrangler.toml` 的 D1/KV 仍为注释模板，没有本 fork 的 Workers Builds 环境变量注入入口。后续同步前重新比较上游实现，不要因为上游没有这些文件或配置就删除、清空或整份覆盖。
+- 保留 `mail-worker/scripts/deploy-builds.mjs`、`mail-worker/package.json` 的 `deploy:builds` 命令、`.gitignore` 的临时配置忽略规则和 `docs/WORKERS_BUILDS.md`。处理这些位置的合并冲突时，在接入上游改动的同时保留绑定保护行为。
+- Workers Builds 使用 `pnpm run deploy:builds`，从构建环境变量 `D1_DATABASE_ID`、`KV_NAMESPACE_ID` 注入已有资源，绑定名固定为 `db`、`kv`。真实资源 ID 只保存在构建环境或被忽略的本地专用配置中，不写入 Git。
+- 缺失或格式不正确的资源 ID、重复的 D1/KV 声明必须在上传前中止；不要回退成无绑定部署，不要自动创建空数据库替代已有数据，也不要以重新初始化或清空数据库解决绑定问题。
+- 保留 `wrangler.toml` 的 `keep_vars = true` 和部署入口的 `--keep-vars`，以保留控制台运行时变量。`keep_vars` 不负责保留 D1/KV，不能替代资源绑定配置。同步上游时不得清空构建环境变量、控制台已有绑定或运行时变量。
+- 部署入口读取并补充当前 `wrangler.toml`，不要改成一份脱离源配置的完整副本。上游对构建、静态资源、AI、邮件转发等配置的更新仍需合入；本 fork 的 Worker 名称、定时任务等部署差异同时保留。
+- GitHub Actions 继续使用 `wrangler-action.toml`，不要把独立的 Actions 绑定替换流程和 Workers Builds 入口混为一套。未来增加其他资源绑定时，也要将其纳入实际部署配置。
+- 只有确认上游提供了等效的绑定注入、失败中止和变量保留行为，才可以替换本实现，并同步更新本节和部署说明。具体切换顺序见 [WORKERS_BUILDS.md](WORKERS_BUILDS.md)。
+
 ## 受保护核心区域
 
 除非当前功能确实需要，否则避免修改这些位置：

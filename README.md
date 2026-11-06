@@ -63,6 +63,8 @@
 
 - **🩺 调试诊断**：提供部署配置、当前用户、随机邮箱、分享接口、缓存和前端资源状态检查，便于排查白屏和部署问题。
 
+- **🔒 部署绑定保护**：Workers Builds 从构建变量注入已有 D1/KV 绑定，缺少配置时中止部署；后续同步上游须保留此能力，详见 [部署与同步说明](docs/WORKERS_BUILDS.md)。
+
 ## 技术栈
 
 - **平台**：[Cloudflare Workers](https://developers.cloudflare.com/workers/)
