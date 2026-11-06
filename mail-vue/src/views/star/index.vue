@@ -33,7 +33,7 @@ function jumpContent(email) {
   emailStore.contentData.showDelete = true
   emailStore.contentData.showStar = true
   emailStore.contentData.showReply = true
-  router.push('/mail')
+  router.push({name: 'content', params: {mailbox: 'starred'}})
 }
 
 function getEmailList(emailId, size) {

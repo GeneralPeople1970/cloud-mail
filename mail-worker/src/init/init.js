@@ -32,6 +32,7 @@ const dbInit = {
 		await this.v3_1DB(c);
 		await this.v3_2DB(c);
 		await this.v3_3DB(c);
+		await this.v3_4DB(c);
 		// fork 专属迁移使用 forkVxDB 命名，避免与上游的 vX_YDB 版本号重名被覆盖
 		await this.forkV1DB(c);
 		await this.forkV2DB(c);
@@ -202,6 +203,14 @@ const dbInit = {
 			await c.env.db.prepare(sql).run();
 		} catch (e) {
 			console.warn(`skip add column ${table}.${column}: ${e.message}`);
+		}
+	},
+
+	async v3_4DB(c) {
+		try {
+			await c.env.db.prepare(`ALTER TABLE email ADD COLUMN sender_email TEXT NOT NULL DEFAULT '';`).run();
+		} catch (e) {
+			console.warn(`跳过字段：${e.message}`);
 		}
 	},
 

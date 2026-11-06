@@ -22,7 +22,7 @@ const routes = [
                 }
             },
             {
-                path: '/mail',
+                path: '/:mailbox(inbox|starred|sent|all-mail|random-email|expired-email)/messages',
                 name: 'content',
                 component: () => import('@/views/content/index.vue'),
                 meta: {
@@ -93,6 +93,10 @@ const routes = [
             },
         ]
 
+    },
+    {
+        path: '/messages',
+        redirect: '/inbox/messages'
     },
     {
         path: '/login',

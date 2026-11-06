@@ -205,7 +205,8 @@ function jumpContent(email) {
   emailStore.contentData.showDelete = true
   emailStore.contentData.showStar = false
   emailStore.contentData.showReply = false
-  router.push({name: 'content'})
+  emailStore.contentData.showUnread = false
+  router.push({name: 'content', params: {mailbox: 'expired-email'}})
 }
 
 function deleteSelected() {

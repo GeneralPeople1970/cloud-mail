@@ -373,7 +373,8 @@ function jumpContent(email) {
   emailStore.contentData.showStar = false
   emailStore.contentData.showReply = false
   emailStore.contentData.showDelete = false
-  router.push({name: 'content'})
+  emailStore.contentData.showUnread = false
+  router.push({name: 'content', params: {mailbox: 'random-email'}})
 }
 
 function getEmailList(emailId, size) {

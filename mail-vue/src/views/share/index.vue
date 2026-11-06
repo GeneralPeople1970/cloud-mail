@@ -78,6 +78,7 @@ import {formatDetailDate, fromNow} from "@/utils/day.js";
 import {cvtR2Url, toOssDomain} from "@/utils/convert.js";
 import {useSettingStore} from "@/store/setting.js";
 import {formatBytes} from "@/utils/file-utils.js";
+import {sanitizeEmailHtml} from "@/utils/email-html.js";
 
 const route = useRoute()
 const {t} = useI18n()
@@ -161,7 +162,7 @@ function htmlToText(email) {
   if (email.text) return cleanText(email.text)
   if (!email.content) return ''
   const div = document.createElement('div')
-  div.innerHTML = email.content.replace(/<(img|iframe|object|embed|video|audio|source|link)[^>]*>/gi, '')
+  div.innerHTML = sanitizeEmailHtml(email.content).replace(/<(img|iframe|object|embed|video|audio|source|link)[^>]*>/gi, '')
   div.querySelectorAll('script, style, title').forEach(el => el.remove())
   return cleanText(div.textContent || div.innerText || '')
 }

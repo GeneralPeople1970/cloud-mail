@@ -55,6 +55,8 @@ const attService = {
 	async toImageUrlHtml(c, content) {
 
 		const { r2Domain } = await settingService.query(c);
+		const ossDomain = domainUtils.toOssDomain(r2Domain);
+		const requestOrigin = c.req?.url ? new URL(c.req.url).origin : '';
 
 		const { document } = parseHTML(content);
 
@@ -86,22 +88,27 @@ const attService = {
 				imageDataList.push(attData);
 			}
 
+			// 同时兼容旧 CDN 地址和上游新增的同源附件代理地址。
+			let attachmentKey = '';
+			if (src?.startsWith(constant.ATTACHMENT_PREFIX)) {
+				attachmentKey = src;
+			} else if (src?.startsWith('/' + constant.ATTACHMENT_PREFIX)) {
+				attachmentKey = src.slice(1);
+			} else if (ossDomain && src?.startsWith(ossDomain + '/')) {
+				attachmentKey = src.slice(ossDomain.length + 1);
+			} else if (requestOrigin && src?.startsWith(requestOrigin + '/' + constant.ATTACHMENT_PREFIX)) {
+				attachmentKey = src.slice(requestOrigin.length + 1);
+			}
+
 			//邮件正文站内图片转cid附件
-			if (src && (src.startsWith(domainUtils.toOssDomain(r2Domain)) || src.startsWith('attachments/'))) {
+			if (attachmentKey) {
 
 				const cid = uuidv4().replace(/-/g, '')
 				img.setAttribute('src', 'cid:' + cid);
 
 				const attData = {};
 
-				if (src.startsWith(domainUtils.toOssDomain(r2Domain))) {
-					attData.key = src.replace(domainUtils.toOssDomain(r2Domain) + '/','');
-				}
-
-				if (src.startsWith('attachments/')) {
-					attData.key = src;
-				}
-
+				attData.key = attachmentKey;
 				attData.contentId = cid;
 				attData.type = attConst.type.EMBED;
 				imageDataList.push(attData);
