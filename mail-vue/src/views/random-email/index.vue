@@ -81,7 +81,7 @@ import emailScroll from "@/components/email-scroll/index.vue";
 import {randomEmailGenerate, randomEmailLatest, randomEmailList, randomEmailQuota} from "@/request/random-email.js";
 import {useEmailStore} from "@/store/email.js";
 import {useSettingStore} from "@/store/setting.js";
-import {sleep} from "@/utils/time-utils.js";
+import {isAutoRefreshEnabled} from "@/websocket/client.js";
 import {isEmail} from "@/utils/verify-utils.js";
 import EmailShareDialog from "@/components/email-share-dialog/index.vue";
 
@@ -220,7 +220,6 @@ onMounted(() => {
       generateRandom()
     }
   })
-  latest()
 })
 
 function applyQuota(data = {}) {
@@ -400,46 +399,33 @@ function getEmailList(emailId, size) {
   })
 }
 
-async function latest() {
-  while (true) {
-    const autoRefresh = settingStore.settings.autoRefresh
+watch([() => route.name, activeAddress, () => params.timeSort, () => isAutoRefreshEnabled(settingStore.settings.autoRefresh)],
+  ([page, address, timeSort, enabled], previous, onCleanup) => {
+    if (page !== 'random-email' || !address || timeSort !== 0 || !enabled) return
 
-    await sleep(autoRefresh > 1 ? autoRefresh * 1000 : 3000)
+    const interval = 10_000
+    let cancelled = false
+    let timer = setTimeout(poll, interval)
+    onCleanup(() => {
+      cancelled = true
+      clearTimeout(timer)
+    })
 
-    if (autoRefresh < 2) {
-      continue
-    }
-
-    if (route.name !== 'random-email') {
-      continue
-    }
-
-    if (params.timeSort !== 0) {
-      continue
-    }
-
-    const latestId = randomEmailScroll.value.latestEmail?.emailId
-    const address = activeAddress.value
-
-    if (!address || (!latestId && latestId !== 0)) {
-      continue
-    }
-
-    try {
-      const list = await randomEmailLatest(address, latestId)
-
-      for (let email of list) {
-        randomEmailScroll.value.addItem(email)
-        await sleep(50)
+    async function poll() {
+      const latestId = randomEmailScroll.value?.latestEmail?.emailId
+      try {
+        if (latestId != null) {
+          const list = await randomEmailLatest(address, latestId)
+          if (cancelled) return
+          for (const email of list) randomEmailScroll.value.addItem(email)
+        }
+      } catch (error) {
+        if (cancelled || error.code === 401 || error.code === 403) return
+        console.error(error)
       }
-    } catch (e) {
-      if (e.code === 401 || e.code === 403) {
-        settingStore.settings.autoRefresh = 0
-      }
-      console.error(e)
+      if (!cancelled) timer = setTimeout(poll, interval)
     }
-  }
-}
+  }, {immediate: true})
 </script>
 
 <style scoped lang="scss">

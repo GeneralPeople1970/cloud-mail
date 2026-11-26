@@ -102,7 +102,7 @@ const randomEmailService = {
 			.where(and(...conditions))
 			.get();
 		const latestEmailQuery = orm(c)
-			.select()
+			.select({ emailId: email.emailId, accountId: email.accountId, userId: email.userId })
 			.from(email)
 			.where(and(...conditions))
 			.orderBy(desc(email.emailId))

@@ -9,6 +9,8 @@ import { parseHTML } from 'linkedom';
 import { v4 as uuidv4 } from 'uuid';
 import domainUtils from '../utils/domain-uitls';
 import settingService from "./setting-service";
+import proxyService from './proxy-service';
+import { ATT_CACHE_CONTROL, isDangerousAttType, isSafeInlineAtt } from '../utils/att-headers';
 
 const attService = {
 
@@ -17,14 +19,18 @@ const attService = {
 		for (let attachment of attachments) {
 
 			let metadate = {
-				contentType: attachment.mimeType,
+				contentType: isDangerousAttType(attachment.mimeType)
+					? 'application/octet-stream'
+					: attachment.mimeType,
 			}
 
-			if (!attachment.contentId) {
-				metadate.contentDisposition = `attachment;filename=${attachment.filename}`
+			if (attachment.contentId) {
+				metadate.cacheControl = ATT_CACHE_CONTROL
+				metadate.contentDisposition = isSafeInlineAtt(attachment.mimeType)
+					? `inline;filename=${attachment.filename}`
+					: `attachment;filename=${attachment.filename}`
 			} else {
-				metadate.contentDisposition = `inline;filename=${attachment.filename}`
-				metadate.cacheControl = `max-age=259200`
+				metadate.contentDisposition = `attachment;filename=${attachment.filename}`
 			}
 
 			await r2Service.putObj(c, attachment.key, attachment.content, metadate);
@@ -88,17 +94,12 @@ const attService = {
 				imageDataList.push(attData);
 			}
 
-			// 同时兼容旧 CDN 地址和上游新增的同源附件代理地址。
-			let attachmentKey = '';
-			if (src?.startsWith(constant.ATTACHMENT_PREFIX)) {
-				attachmentKey = src;
-			} else if (src?.startsWith('/' + constant.ATTACHMENT_PREFIX)) {
-				attachmentKey = src.slice(1);
-			} else if (ossDomain && src?.startsWith(ossDomain + '/')) {
-				attachmentKey = src.slice(ossDomain.length + 1);
-			} else if (requestOrigin && src?.startsWith(requestOrigin + '/' + constant.ATTACHMENT_PREFIX)) {
-				attachmentKey = src.slice(requestOrigin.length + 1);
+			const proxyUrl = proxyService.fromProxyPath(src);
+			if (proxyUrl) {
+				img.setAttribute('src', proxyUrl);
 			}
+
+			const attachmentKey = !proxyUrl && this.fromAttSrc(src, ossDomain, requestOrigin);
 
 			//邮件正文站内图片转cid附件
 			if (attachmentKey) {
@@ -196,9 +197,13 @@ const attService = {
 				continue;
 			}
 			await r2Service.putObj(c, attData.key, attData.buff, {
-				contentType: attData.mimeType,
-				cacheControl: `max-age=259200`,
-				contentDisposition: `inline;filename=${attData.filename}`
+				contentType: isDangerousAttType(attData.mimeType)
+					? 'application/octet-stream'
+					: attData.mimeType,
+				cacheControl: ATT_CACHE_CONTROL,
+				contentDisposition: isSafeInlineAtt(attData.mimeType)
+					? `inline;filename=${attData.filename}`
+					: `attachment;filename=${attData.filename}`
 			});
 			delete attData.buff;
 		}
@@ -283,6 +288,21 @@ const attService = {
 			return []
 		}
 		return orm(c).select().from(att).where(inArray(att.key, keys)).orderBy(desc(att.attId)).groupBy(att.key).all();
+	},
+
+	// attachments/、/attachments/、../attachments/ 都收成存储 key。
+	fromAttSrc(src, ossDomain, requestOrigin) {
+		if (!src) {
+			return null;
+		}
+		const path = src.split(/[?#]/, 1)[0];
+		if (ossDomain && path.startsWith(ossDomain + '/')) {
+			return path.slice(ossDomain.length + 1) || null;
+		}
+		const key = requestOrigin && path.startsWith(requestOrigin + '/')
+			? path.slice(requestOrigin.length + 1)
+			: path.replace(/^(?:\.{1,2}\/)+|^\//, '');
+		return key.startsWith(constant.ATTACHMENT_PREFIX) ? key : null;
 	}
 };
 

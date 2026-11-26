@@ -11,8 +11,8 @@
       </el-checkbox>
       <div class="header-left" :style="'padding-left:' + actionLeft">
 
-        <slot name="first"></slot>
         <Icon class="icon reload" icon="ion:reload" width="18" height="18" @click="refresh"/>
+        <slot name="first"></slot>
         <slot name="afterReload"></slot>
         <Icon v-perm="'email:delete'" class="icon delete" icon="uiw:delete" width="16" height="16"
               v-if="allowDelete && getSelectedMailsIds().length > 0"
@@ -250,7 +250,7 @@ import {useI18n} from "vue-i18n";
 import {EmailUnreadEnum} from "@/enums/email-enum.js";
 import { UseVirtualList } from '@vueuse/components'
 import { useScroll } from '@vueuse/core'
-import { sanitizeEmailHtml } from '@/utils/email-html.js'
+import { emailHtmlToText } from '@/utils/email-html.js'
 
 const props = defineProps({
   getEmailList: Function,
@@ -314,7 +314,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['jump', 'refresh-before', 'delete-draft', 'right-search', 'selection-change'])
+const emit = defineEmits(['jump', 'refresh-before', 'refresh-success', 'delete-draft', 'right-search', 'selection-change'])
 const {t} = useI18n()
 const settingStore = useSettingStore()
 const uiStore = useUiStore();
@@ -335,6 +335,7 @@ const scrollbarRef = ref(null)
 // iPad can report a Mac platform when requesting desktop websites.
 const isMacOS = /Mac/.test(navigator.platform) && navigator.maxTouchPoints <= 1
 let reqLock = false
+let listRequestId = 0
 let isMobile = ref(innerWidth < 1367)
 let skeletonRows = 0
 const timePaddingRight = ref('');
@@ -393,6 +394,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  listRequestId++
   clearInterval(timer)
 })
 
@@ -470,13 +472,7 @@ watch(() => arrivedState.bottom, (isBottom) => {
 
 watch(
     () => emailList.map(item => item.checked),
-    () => {
-      checkedEmailCount.value = emailList.length
-      if (emailList.length > 0) {
-        updateCheckStatus();
-      }
-    },
-    {deep: true}
+    updateCheckStatus
 );
 
 
@@ -604,15 +600,7 @@ function listPreview(email) {
     return ''
   }
 
-  const tempDiv = document.createElement('div');
-
-  tempDiv.innerHTML = sanitizeEmailHtml(email.content).replace(
-      /<(img|iframe|object|embed|video|audio|source|link)[^>]*>/gi, ''
-  );
-
-  tempDiv.querySelectorAll('script, style, title').forEach(el => el.remove());
-
-  return cleanSpace(tempDiv.textContent || tempDiv.innerText || '')
+  return cleanSpace(emailHtmlToText(email.content))
 }
 
 function cleanSpace(text) {
@@ -823,8 +811,6 @@ function handleCheckAllChange(val) {
   } else {
     emailList.forEach(item => item.checked = false);
   }
-  isIndeterminate.value = false;
-  emitSelectionChange();
 }
 
 // 获取选中的邮件列表id
@@ -853,6 +839,13 @@ function emitSelectionChange() {
   emit('selection-change', getSelectedMails());
 }
 
+function toggleRowChecked(email) {
+  if (!email.checked && isSelectMax.value) {
+    return
+  }
+  email.checked = !email.checked
+}
+
 function jumpDetails(email) {
 
   if (dropdownShow.value) {
@@ -866,27 +859,29 @@ function jumpDetails(email) {
       return
     }
   }
+
+  if (props.showCheckbox && checkedEmailCount.value > 0) {
+    toggleRowChecked(email)
+    return
+  }
+
   emit('jump', email)
 }
 
 
 function getEmailList(refresh = false) {
 
-  if (reqLock) return;
+  if (!refresh && (reqLock || loading.value || noLoading.value)) return Promise.resolve(false);
 
   let emailId = emailList.length > 0 ? emailList.at(-1).emailId : 0;
 
+  const requestId = ++listRequestId
   reqLock = true
 
-  if (!refresh) {
-
-    if (loading.value || noLoading.value) {
-      reqLock = false
-      return
-    }
-
-  } else {
+  if (refresh) {
     getSkeletonRows()
+    emailList.length = 0
+    latestEmail.value = null
     emailId = 0
     loading.value = true
     scrollTop = 0
@@ -899,12 +894,13 @@ function getEmailList(refresh = false) {
   }
   let start = Date.now();
 
-  props.getEmailList(emailId, queryParam.size).then(async data => {
+  return props.getEmailList(emailId, queryParam.size).then(async data => {
     let end = Date.now();
     let duration = end - start;
     if (duration < 300 && !emailId) {
         await sleep(300 - duration)
     }
+    if (requestId !== listRequestId) return false
     firstLoad.value = false
 
     let list = data.list.map(item => ({
@@ -913,11 +909,7 @@ function getEmailList(refresh = false) {
     }));
 
 
-    if (refresh) {
-      emailList.length = 0
-    }
-
-    latestEmail.value = data.latestEmail
+    if (!emailId) latestEmail.value = data.latestEmail
 
     handleList(list);
     emailList.push(...list);
@@ -927,7 +919,9 @@ function getEmailList(refresh = false) {
     followLoading.value = data.list.length >= queryParam.size;
 
     total.value = data.total;
+    return true;
   }).finally(() => {
+    if (requestId !== listRequestId) return
     loading.value = false
     reqLock = false
   })
@@ -975,14 +969,13 @@ function refresh() {
   if (props.skeleton) {
     scrollbarRef.value.setScrollTop(0)
   }
-  refreshList()
+  refreshList().then(ok => {
+    if (ok) emit('refresh-success')
+  }).catch(() => {})
 }
 
 function refreshList() {
-  checkAll.value = false;
-  isIndeterminate.value = false;
-  emitSelectionChange();
-  getEmailList(true);
+  return getEmailList(true);
 }
 
 function loadData() {
@@ -1359,9 +1352,12 @@ function renderHighlight(value) {
     background-color: var(--email-right-click-background);
   }
 
-  /*&[data-checked="true"] {
-    background-color: #c2dbff;
-  }*/
+  &[data-checked="true"],
+  &[data-checked="true"]:hover,
+  &.right-checked[data-checked="true"],
+  &.right-checked[data-checked="true"]:hover {
+    background-color: var(--email-hover-background);
+  }
 }
 
 

@@ -3,7 +3,7 @@
     <h1 align="center">Cloud Mail</h1>
     <p align="center">An all-in-one email service platform powered by Cloudflare</p>
     <p align="center">
-        <a href="/README.md">简体中文</a> | English
+        <a href="/README.md">简体中文</a> | English | <a href="/README-ja.md">日本語</a>
     </p>
 </p>
 

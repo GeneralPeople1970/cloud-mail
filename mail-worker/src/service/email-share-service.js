@@ -180,7 +180,7 @@ const emailShareService = {
 
 		const listQuery = query.limit(size).all();
 		const totalQuery = orm(c).select({ total: count() }).from(email).where(and(...conditions)).get();
-		const latestEmailQuery = orm(c).select().from(email)
+		const latestEmailQuery = orm(c).select({ emailId: email.emailId, accountId: email.accountId, userId: email.userId }).from(email)
 			.where(and(...conditions))
 			.orderBy(desc(email.emailId))
 			.limit(1)

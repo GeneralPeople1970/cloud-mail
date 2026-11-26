@@ -3,7 +3,7 @@
     <h1 align="center">Cloud Mail</h1>
     <p align="center"><strong>基于 Cloudflare 的一站式邮箱服务平台</strong></p>
     <p align="center">
-        简体中文 | <a href="/README-en.md">English</a>
+        简体中文 | <a href="/README-en.md">English</a> | <a href="/README-ja.md">日本語</a>
     </p>
 </p>
 
